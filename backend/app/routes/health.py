@@ -31,7 +31,7 @@ async def providers() -> dict:
                 "id": "anthropic",
                 "label": "Anthropic (Claude)",
                 "default_model": settings.anthropic_default_model,
-                "models": [settings.anthropic_default_model, "claude-sonnet-5-5", "claude-haiku-4-5"],
+                "models": [settings.anthropic_default_model, "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-sonnet-5-5", "claude-sonnet-5", "claude-haiku-5-5", "claude-haiku-4-5", "claude-fable-5-1"],
                 "key_hint": "sk-ant-...",
             },
             {

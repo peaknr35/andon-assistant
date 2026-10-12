@@ -7,7 +7,7 @@ defaults used when `model` is omitted. The frontend catalog mirrors this file
 | provider | SDK | base_url | default model | other offered models |
 |---|---|---|---|---|
 | `openai` | `openai` | (SDK default) | `gpt-5.1` | `gpt-5.1-mini`, `gpt-5` |
-| `anthropic` | `anthropic` | (SDK default) | `claude-opus-5-5` | `claude-sonnet-5-5`, `claude-haiku-4-5` |
+| `anthropic` | `anthropic` | (SDK default) | `claude-opus-5-5` | `claude-opus-5`, `claude-opus-4-8`, `claude-opus-4-7`, `claude-sonnet-5-5`, `claude-sonnet-5`, `claude-haiku-5-5`, `claude-haiku-4-5`, `claude-fable-5-1` |
 | `kimi` | `openai` | `https://api.moonshot.ai/v1` | `kimi-k2-0905-preview` | `kimi-k2-turbo-preview`, `kimi-k2-thinking` |
 
 ## Why `openai` SDK for Kimi
