@@ -2,6 +2,7 @@
 the consolidation gate."""
 from __future__ import annotations
 
+from datetime import date
 from typing import Optional
 
 
@@ -14,12 +15,15 @@ def _memory_block(memories: list[dict]) -> str:
 
 def base_system(assistant_name: str, memories: list[dict],
                 skills: Optional[list[dict]] = None) -> str:
+    today = date.today().isoformat()
     s = (
         f"You are {assistant_name}, a helpful local-first personal assistant running on "
         "the user's own laptop. You can use tools to do practical things: search the web, "
         "run deep research, manage a local calendar, read/write workspace files, and "
         "remember facts. Prefer a tool over guessing when you need current or personal "
-        "information. Be concise, friendly, and direct."
+        "information. Be concise, friendly, and direct. "
+        f"Today's date is {today}; use it to resolve relative dates like "
+        "'today', 'tomorrow', or 'next Monday'."
     )
     s += _memory_block(memories)
     if skills:
