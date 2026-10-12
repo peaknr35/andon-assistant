@@ -1,4 +1,4 @@
-# Local Agent (with Deep Research Studio inside)
+# Andon Assistant (with Deep Research Studio inside)
 
 A local-first personal AI assistant: talk to it in the terminal or a browser
 dashboard off one brain; it remembers useful things in a single local SQLite file

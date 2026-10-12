@@ -1,4 +1,4 @@
-# Local Agent
+# Andon Assistant
 
 A **local-first personal AI assistant** you can read end to end. Talk to it in a
 terminal TUI or a browser dashboard off **one brain**; it remembers useful things in

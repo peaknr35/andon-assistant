@@ -42,7 +42,7 @@ This file is the human-readable summary._
 - [ ] M3: skills loader, LLM-as-judge evals, Google calendar sync
 
 ### Open
-- Assistant name is a placeholder ("Local Agent"); rename in README + root CLAUDE.md.
+- Assistant name: "Andon Assistant" (rebranded 2026-10-12 for the shop-floor troubleshooting demo).
 - PydanticAI backend is wired + its model construction tested; full live-turn validation needs a key.
 
 ## M2 -- Chat dashboard (2026-10-06)

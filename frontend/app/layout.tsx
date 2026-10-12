@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Local Agent",
+  title: "Andon Assistant",
   description:
     "A local-first personal AI assistant: chat in the terminal or browser, one SQLite brain, tools for real work. Deep Research Studio is one of its tools. Bring your own key.",
 };

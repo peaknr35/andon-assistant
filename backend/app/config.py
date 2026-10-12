@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     app_name: str = "Deep Research Studio API"
-    assistant_name: str = "Local Agent"
+    assistant_name: str = "Andon Assistant"
     version: str = "0.2.0"
     log_level: str = "INFO"
 

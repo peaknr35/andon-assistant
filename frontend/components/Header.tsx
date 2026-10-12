@@ -29,7 +29,7 @@ export function Header() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             <Sparkles className="h-5 w-5" style={{ color: "var(--accent)" }} />
-            <span>Local Agent</span>
+            <span>Andon Assistant</span>
           </Link>
           <nav className="flex items-center gap-1">
             {NAV.map((n) => {
