@@ -56,7 +56,22 @@ async def _one_turn(message: str, provider: str, model, api_key: str, conv_id):
     return conv_id
 
 
+def _load_dotenv() -> None:
+    """Populate os.environ from backend/.env (local CLI convenience; never overrides real env)."""
+    from pathlib import Path
+    p = Path(__file__).resolve().parents[1] / ".env"
+    if not p.exists():
+        return
+    for raw in p.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        os.environ.setdefault(k.strip(), v.strip())
+
+
 async def _main() -> None:
+    _load_dotenv()
     s = get_settings()
     provider = os.getenv("APP_PROVIDER", s.default_provider)
     model = os.getenv("APP_MODEL") or None
