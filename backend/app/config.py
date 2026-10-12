@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     agent_backend: str = "pydantic_ai"
     agent_max_steps: int = 6
 
+    # --- calendar sync (optional; the background loop runs only when a provider is enabled) ---
+    calendar_sync_minutes: int = 15
+
     # --- local-first storage ---
     # Empty -> ~/.assistant/state.db  and  ~/.assistant/workspace
     db_path: str = ""

@@ -132,12 +132,39 @@ def recent_tool_runs(limit: int = 30) -> list[dict[str, Any]]:
 # --- local calendar (events) ---
 
 def add_event(title: str, start: str, end: Optional[str] = None,
-              notes: Optional[str] = None, google_id: Optional[str] = None) -> int:
+              notes: Optional[str] = None, google_id: Optional[str] = None,
+              outlook_id: Optional[str] = None) -> int:
     with connect() as c:
         cur = c.execute(
-            'INSERT INTO events (title, start, "end", notes, google_id, created_at)'
+            'INSERT INTO events (title, start, "end", notes, google_id, outlook_id, created_at)'
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (title, start, end, notes, google_id, outlook_id, _now()),
+        )
+        return int(cur.lastrowid)
+
+
+def upsert_event_by_external_id(provider: str, external_id: str, title: str, start: str,
+                                end: Optional[str] = None,
+                                notes: Optional[str] = None) -> int:
+    """Insert or update a local event keyed by a cloud event id (dedup for pull sync).
+
+    provider is 'google' or 'outlook'. Returns the local event id.
+    """
+    if not external_id:
+        return add_event(title, start, end, notes)
+    col = "google_id" if provider == "google" else "outlook_id"
+    with connect() as c:
+        row = c.execute(f"SELECT id FROM events WHERE {col} = ?", (external_id,)).fetchone()
+        if row:
+            c.execute(
+                'UPDATE events SET title=?, start=?, "end"=?, notes=? WHERE id=?',
+                (title, start, end, notes, row["id"]),
+            )
+            return int(row["id"])
+        cur = c.execute(
+            f'INSERT INTO events (title, start, "end", notes, {col}, created_at)'
             " VALUES (?, ?, ?, ?, ?, ?)",
-            (title, start, end, notes, google_id, _now()),
+            (title, start, end, notes, external_id, _now()),
         )
         return int(cur.lastrowid)
 

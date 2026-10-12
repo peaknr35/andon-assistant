@@ -10,4 +10,6 @@ httpx>=0.27
 pydantic-ai-slim[openai,anthropic]>=0.0.20
 rich>=13.7
 # Optional -- only if you enable Google Calendar sync (APP_GOOGLE_CALENDAR=1):
-#   pip install google-api-python-client google-auth
+#   pip install google-api-python-client google-auth google-auth-oauthlib
+# Optional -- only if you enable Outlook / Microsoft 365 sync (APP_OUTLOOK_CALENDAR=1):
+#   pip install msal

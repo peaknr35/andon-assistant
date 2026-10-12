@@ -20,9 +20,19 @@ def db_path() -> Path:
     return p
 
 
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Idempotent schema upgrades for existing DBs (CREATE IF NOT EXISTS won't alter)."""
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(events)")}
+    if "outlook_id" not in cols:
+        conn.execute("ALTER TABLE events ADD COLUMN outlook_id TEXT")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_events_outlook ON events (outlook_id)")
+    conn.commit()
+
+
 def connect() -> sqlite3.Connection:
     conn = sqlite3.connect(db_path())
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
     conn.executescript(_SCHEMA)
+    _migrate(conn)
     return conn

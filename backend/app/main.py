@@ -2,6 +2,11 @@
 Studio endpoints (now the deep_research tool's home)."""
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,11 +16,45 @@ from .routes import chat, health, research
 
 settings = get_settings()
 configure_logging(settings.log_level)
+logger = logging.getLogger(__name__)
+
+
+async def _calendar_sync_loop(minutes: int) -> None:
+    """Periodically pull cloud calendar events into the local store (only when enabled)."""
+    from .services.calendar_sync import any_enabled, sync_once
+    interval = max(60, minutes * 60)
+    while True:
+        try:
+            if any_enabled():
+                counts = await asyncio.to_thread(sync_once)
+                if counts:
+                    logger.info("calendar sync: %s", counts)
+        except Exception:  # pragma: no cover - defensive, never kill the loop
+            logger.exception("calendar sync loop error")
+        await asyncio.sleep(interval)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from .services.calendar_sync import any_enabled
+    task = None
+    if any_enabled():
+        logger.info("calendar sync enabled; starting background refresh")
+        task = asyncio.create_task(_calendar_sync_loop(settings.calendar_sync_minutes))
+    try:
+        yield
+    finally:
+        if task:
+            task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
     description="Local-first personal agent + streaming deep research. Bring your own key.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(

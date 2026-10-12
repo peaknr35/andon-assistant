@@ -50,10 +50,12 @@ CREATE TABLE IF NOT EXISTS events (     -- local calendar
     start       TEXT NOT NULL,          -- ISO-8601
     "end"       TEXT,
     notes       TEXT,
-    google_id   TEXT,                   -- set when synced to Google (M3)
+    google_id   TEXT,                   -- set when synced to Google Calendar
+    outlook_id  TEXT,                   -- set when synced to Microsoft Outlook
     created_at  TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_turns_conv ON turns (conversation_id);
 CREATE INDEX IF NOT EXISTS idx_facts_created ON facts (created_at);
 CREATE INDEX IF NOT EXISTS idx_events_start ON events (start);
+CREATE INDEX IF NOT EXISTS idx_events_google ON events (google_id);

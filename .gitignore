@@ -23,3 +23,9 @@ Thumbs.db
 # Exported secrets & one-off artifact downloads (never commit)
 *-keys.json
 /*.html
+
+# Calendar OAuth secrets (never commit)
+credentials.json
+token.json
+google_token.json
+outlook_token.json

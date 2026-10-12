@@ -22,7 +22,7 @@ Organized as an **ICM workspace**: every folder documents itself. Start at
   a local calendar, skills -- with a recall gate before each turn and a consolidation
   gate that saves only what's worth keeping (plus explicit "remember that...").
 - **Tools:** `web_search`, `deep_research`, `remember`/`recall`, `calendar_*` (local,
-  optional Google sync), `file_read`/`file_write` (sandboxed to a workspace).
+  optional two-way Google/Outlook sync), `file_read`/`file_write` (sandboxed to a workspace).
 - **Skills:** drop a markdown procedure in [`skills/`](skills/) and the agent can follow it.
 - **Built-in evals:** deterministic (offline) + LLM-as-judge, to test if a change helps.
 
