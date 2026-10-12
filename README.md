@@ -11,6 +11,8 @@ Organized as an **ICM workspace**: every folder documents itself. Start at
 [`CLAUDE.md`](CLAUDE.md) (routing), [`CONTEXT.md`](CONTEXT.md) (how it fits), and
 [`FILE-MAP.md`](FILE-MAP.md) (every file).
 
+> **New here, or handing this off?** See [`docs/GETTING-STARTED.md`](docs/GETTING-STARTED.md) for a 10-minute setup from a fresh machine. On Windows: run `setup.ps1` once, then `run.ps1` to launch both servers and open the dashboard.
+
 ## What it does
 - **Visible turn loop:** RECEIVE -> RECALL -> (REASON -> ACT -> OBSERVE)* -> REMEMBER
   -> REPLY, streamed live in the terminal and the dashboard.
