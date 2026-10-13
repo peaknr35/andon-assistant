@@ -6,6 +6,7 @@ AGENT follows live in `_shared/`; these are for humans.)
 ## What's here
 - `GETTING-STARTED.md` -- clone -> setup -> run -> use -> reset -> troubleshoot (handoff guide).
 - `DEMO-RUNBOOK.md` -- the script for presenting it live (prompts, talk track, fallbacks).
+- `DEMO-SCENARIOS.md` -- a bigger prompt bank / scenarios for when you are unsure what to ask next.
 - `CALENDAR-SYNC.md` -- step-by-step Google + Outlook OAuth setup, then the env vars to flip on.
 - `api.md` -- the HTTP/SSE API (mirrors `_shared/api-contract.md` for integrators).
 - `setup.md` -- run locally, environment variables, getting provider keys.
