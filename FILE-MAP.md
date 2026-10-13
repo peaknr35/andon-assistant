@@ -13,6 +13,8 @@ Regenerate after adding or moving files.
 - `FILE-MAP.md`
 - `README.md`
 - `docker-compose.yml`
+- `run.ps1`
+- `setup.ps1`
 
 ### _config/
 One job: the stable facts about the project that rarely change per run. Reference
@@ -24,6 +26,7 @@ One job: the stable facts about the project that rarely change per run. Referenc
 
 ### _shared/
 One job: the facts BOTH apps (and the terminal) must agree on. This is the
+- `calendar-sync.md`
 - `CONTEXT.md`
 - `agent-turn-contract.md`
 - `api-contract.md`
@@ -34,13 +37,13 @@ One job: the facts BOTH apps (and the terminal) must agree on. This is the
 
 ### _templates/
 One job: hold blank starters so a new unit of work begins as a copy, not a blank
-- `new-skill.md`
 - `CONTEXT.md`
 - `decision-record.template.md`
 - `folder-CONTEXT.template.md`
 - `new-component.md`
 - `new-endpoint.md`
 - `new-provider.md`
+- `new-skill.md`
 - `new-tool.md`
 
 ### backend/
@@ -102,22 +105,24 @@ One job: thin FastAPI handlers that validate input and delegate to the agent/ser
 - `research.py`
 
 ### backend/app/services/
-One job: the actual research work, kept out of the route handlers.
+One job: work kept out of the route handlers and tools -- the research pipeline, web
 - `CONTEXT.md`
 - `__init__.py`
+- `calendar_sync.py`
 - `research.py`
 - `search.py`
 
 ### backend/app/tools/
 One job: the practical things the agent can do. Each tool is a typed async function
-- `google_calendar.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `base.py`
 - `calendar.py`
 - `deep_research.py`
 - `file_tools.py`
+- `google_calendar.py`
 - `memory_tools.py`
+- `outlook_calendar.py`
 - `registry.py`
 - `web_search.py`
 
@@ -130,22 +135,35 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
 - `run.py`
 
 ### backend/evals/cases/
+One job: hold eval cases as JSONL, one case per line.
+- `CONTEXT.md`
 - `basic.jsonl`
+
+### backend/scripts/
+- `CONTEXT.md`
+- `google_auth.py`
+- `outlook_auth.py`
+- `seed_demo.py`
 
 ### backend/tests/
 One job: prove the API, auth flow, and provider wiring work -- with no real keys or
-- `test_m3.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
 - `test_agent.py`
 - `test_auth.py`
+- `test_calendar_sync.py`
 - `test_health.py`
+- `test_m3.py`
 - `test_providers.py`
 - `test_research_stream.py`
 
 ### docs/
+One job: guides a person reads to run, demo, extend, or integrate the app. (Contracts the
+- `CALENDAR-SYNC.md`
 - `CONTEXT.md`
+- `DEMO-RUNBOOK.md`
+- `GETTING-STARTED.md`
 - `api.md`
 - `changelog.md`
 - `setup.md`
@@ -241,33 +259,3 @@ One job: how the backend ships to production (Cloud Run).
 
 ### ops/scripts/
 One job: local run recipes and maintenance scripts.
-- `CONTEXT.md`
-- `build-file-map.sh`
-- `run-local.md`
-
-### planning/
-- `CONTEXT.md`
-
-### planning/architecture/
-One job: durable architecture docs (component map, data flow) referenced when building.
-- `CONTEXT.md`
-- `system-overview.md`
-
-### planning/decisions/
-One job: a dated log of non-obvious technical choices and why they were made.
-- `2026-10-05_provider-abstraction.md`
-- `2026-10-06_agent-architecture.md`
-- `CONTEXT.md`
-
-### planning/specs/
-One job: WHAT to build and WHY (not HOW). Implementation follows the backend/frontend
-- `CONTEXT.md`
-- `assistant-spec.md`
-- `backend-spec.md`
-- `frontend-spec.md`
-
-### skills/
-One job: reusable "how to do X" procedures, in plain markdown, surfaced to the agent
-- `CONTEXT.md`
-- `daily-standup.md`
-- `summarize-url.md`

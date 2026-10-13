@@ -1,7 +1,7 @@
 # backend/tests -- pytest suite
 
-One job: prove the API, auth flow, and provider wiring work -- with no real keys or
-network (providers + search are mocked).
+One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
+sync work -- with no real keys or network (providers + search are mocked).
 
 ## What's here
 - `conftest.py` -- the `client` fixture (FastAPI `TestClient`).
@@ -9,7 +9,11 @@ network (providers + search are mocked).
 - `test_auth.py` -- request validation (422s) + invalid key -> SSE `error` (auth).
 - `test_providers.py` -- factory builds the right client; OpenAI happy path +
   auth-error mapping + stream chunking (all mocked).
-- `test_research_stream.py` -- full pipeline event order with a fake LLM + fake search.
+- `test_research_stream.py` -- full research pipeline event order (fake LLM + fake search).
+- `test_agent.py` -- the turn loop on the manual backend with a fake client (temp DB).
+- `test_m3.py` -- skills load, calendar disabled-by-default, deterministic evals.
+- `test_calendar_sync.py` -- providers disabled by default, dedup upsert, pull sync with a
+  fake provider, local-only create (temp DB).
 - `__init__.py`
 
 ## Run
@@ -17,10 +21,10 @@ network (providers + search are mocked).
 (`asyncio_mode=auto` and `testpaths` are set in `../pyproject.toml`).
 
 ## Rules
-- Never use a real key or hit the network. Patch `build_client` in
-  `app.routes.research` and `web_search` in `app.services.research` (patch at the
-  import site the code uses, not the definition site).
-- Add a test with every new endpoint, provider, or event type.
+- Never use a real key or hit the network. Patch `build_client` / `web_search` /
+  calendar provider `is_enabled`+`list_events` at the import site the code uses.
+- Isolate the DB with `APP_DB_PATH` -> `tmp_path` + `get_settings.cache_clear()`.
+- Add a test with every new endpoint, provider, tool, or event type.
 
 ## Links
 - Parent: `../CONTEXT.md` . App: `../app/CONTEXT.md`

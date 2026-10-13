@@ -29,3 +29,6 @@ credentials.json
 token.json
 google_token.json
 outlook_token.json
+
+# Archived / one-off artifacts (gitignored, local-only)
+_archive/

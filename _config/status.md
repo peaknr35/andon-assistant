@@ -3,60 +3,52 @@
 _Status is derivable from the filesystem: a path existing = that piece is built.
 This file is the human-readable summary._
 
-## Done
-- [x] ICM workspace scaffold (root router, contracts, factory layer)
-- [x] Shared contracts: API/SSE schema, provider matrix, research workflow spec
-- [x] Backend: config, logging, Pydantic models
-- [x] Backend: provider clients (OpenAI, Anthropic, Kimi) + factory
-- [x] Backend: web search tool (DuckDuckGo) + research orchestration service
-- [x] Backend: routes (health, research stream) + app wiring
-- [x] Backend: tests (health, auth flow, provider connections, stream)
-- [x] Backend: Dockerfile + requirements + env example
-- [x] Frontend: Next.js app (chat UI, streaming, progress, sources)
-- [x] Frontend: model switching + compare mode
-- [x] Frontend: API key manager (save / import / export / clear)
-- [x] Frontend: state persistence across navigation
-- [x] Frontend: export to Google Docs (copy + OAuth create)
-- [x] docker-compose + env examples
-- [x] docs (api, setup, changelog) + ops (Cloud Run deploy)
+## Current state
+Andon Assistant is a local-first agent (terminal + dashboard, one SQLite brain, dual-track
+tool calling) with Deep Research Studio as a tool. M1-M3 complete; demo-prep + two-way
+calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth setup).
+
+## Done -- v0.1 Deep Research Studio (2026-10-05)
+- [x] FastAPI SSE research backend (OpenAI/Anthropic/Kimi, BYO key) + provider factory
+- [x] web search (DuckDuckGo) + plan->research->report pipeline
+- [x] Next.js streaming UI: compare mode, API-key manager, Google Docs export
+- [x] Docker + docker-compose + Cloud Run deploy; docs (api/setup/changelog); 19 tests
+
+## Done -- per-folder ICM (2026-10-06)
+- [x] A CONTEXT.md in every folder, `_templates/` starters, generated `FILE-MAP.md`
+
+## Done -- M1 local agent core (2026-10-06)
+- [x] SQLite memory (facts/turns/tool_runs/calendar/skills) + recall + consolidation gate
+- [x] Tool registry: web_search, deep_research, remember/recall, calendar (local), file (sandboxed)
+- [x] Dual-track engine (manual prompt-JSON + PydanticAI), visible turn loop
+- [x] POST /chat/stream + /memory + /trace; Rich TUI (python -m app.cli)
+
+## Done -- M2 chat dashboard (2026-10-06)
+- [x] Chat home with live turn timeline (phases, tool cards, memory) over SSE
+- [x] Read-only memory panel; lib/api.ts generalized; ChatContext persistence
+- [x] Research moved to /research; nav rebranded; typecheck + build green
+
+## Done -- M3 skills, evals, calendar (2026-10-06)
+- [x] skills/ loader (markdown procedures in the system prompt)
+- [x] evals/: deterministic (offline) + LLM-as-judge + `python -m evals.run`
+- [x] Optional calendar sync (local SQLite stays source of truth); 28 tests
+
+## Done -- demo prep + calendar sync (2026-10-12)
+- [x] Rebrand to "Andon Assistant" (header, title, config, docs)
+- [x] deep_research sped up (parallel searches + one report, ~60s -> ~12s)
+- [x] Anthropic model picker expanded (Opus 4.7-5.5, Sonnet, Haiku, Fable)
+- [x] Agent knows today's date; CLI auto-loads backend/.env
+- [x] Handoff kit: docs/GETTING-STARTED.md + setup.ps1 / run.ps1 + .env.example
+- [x] five-whys-rca skill + seed_demo.py demo data
+- [x] Two-way calendar sync: Google + Outlook (push + pull + dedup + periodic), off by default
+- [x] Tests: added tests/test_calendar_sync.py
 
 ## Next / ideas
-- [ ] Optional page-content fetch to enrich findings (currently snippet-based)
-- [ ] Optional Tavily search backend when a key is provided
-- [ ] Persisted research history (would require leaving "stateless" -- see project non-goals)
+- [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
+- [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)
+- [ ] Calendar: live OAuth setup (user's Google Cloud + Entra apps), then verify two-way
+- [ ] Optional page-content fetch / Tavily search backend when a key is provided
 
-## Restructure log
-- 2026-10-06: Completed per-folder ICM -- added a CONTEXT.md to every folder
-  (identity, contents, rules, where to add things), a `_templates/` starter set,
-  and a generated `FILE-MAP.md` index. Additive only; no application code changed.
-
-## M1 -- Local agent core (2026-10-06)
-- [x] SQLite memory: schema + db + store (facts/turns/tool_runs/calendar/skills) with recall
-- [x] Tool registry + tools: web_search, deep_research, remember/recall, calendar (local), file (sandboxed)
-- [x] Agent: dual-track engine (manual prompt-JSON + PydanticAI), visible turn loop, consolidation gate
-- [x] Routes: POST /chat/stream (SSE) + GET /memory + GET /trace; wired into main
-- [x] Terminal: Rich TUI (python -m app.cli)
-- [x] Tests: turn loop (offline), tools, file sandbox, PydanticAI model build -- 25 passing
-- [x] Shared contracts: agent-turn, memory-schema, tools; per-folder CONTEXTs; root rebrand
-- [ ] M2: chat dashboard (frontend)
-- [ ] M3: skills loader, LLM-as-judge evals, Google calendar sync
-
-### Open
-- Assistant name: "Andon Assistant" (rebranded 2026-10-12 for the shop-floor troubleshooting demo).
-- PydanticAI backend is wired + its model construction tested; full live-turn validation needs a key.
-
-## M2 -- Chat dashboard (2026-10-06)
-- [x] Frontend: chat home with live turn timeline (phases, tool cards, memory), streaming via SSE
-- [x] Read-only memory panel (facts + counts + recent tools) from GET /memory + /trace
-- [x] lib/api.ts generalized (streamResearch + streamChat + fetchMemory/Trace); chatTypes mirror
-- [x] ChatContext (state persists across navigation + reloads)
-- [x] Research UI moved to /research; nav rebranded (Assistant / Research / Compare); typecheck + build green
-
-## M3 -- Skills, evals, Google calendar (2026-10-06)
-- [x] skills/ loader: markdown procedures surfaced in the system prompt (daily-standup, summarize-url)
-- [x] evals/: deterministic (offline, 17 checks) + LLM-as-judge (run_turn trace) + `python -m evals.run`
-- [x] Optional Google Calendar sync (APP_GOOGLE_CALENDAR=1); local SQLite stays the source of truth
-- [x] Tests: 28 passing (added skills, google-disabled, deterministic-eval gate)
-
-All three milestones (M1-M3) complete. Next ideas: token-streamed replies in the manual
-backend; agent.iter live streaming for the PydanticAI backend; FTS/sqlite-vec recall.
+## Open
+- PydanticAI backend wired + model construction tested; full live-turn validation needs a key.
+- Calendar sync code done; cannot be live-tested until the user creates the Google/Azure apps.

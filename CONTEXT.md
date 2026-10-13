@@ -1,34 +1,44 @@
-# Deep Research Studio -- System Context
+# Andon Assistant -- System Context
 
-One sentence: a user asks a question, the backend plans sub-questions, researches
-each one against the live web, and streams a final cited report; the frontend
-renders every stage as it arrives.
+One sentence: a local-first personal assistant you reach two ways (terminal TUI or
+browser dashboard) off one brain; it runs a visible turn loop, remembers useful things
+in a single local SQLite file, and calls tools for real work -- web search, deep research
+(the former Deep Research Studio, now a tool), a two-way calendar, and sandboxed files.
 
-## The pipeline (full spec: `_shared/research-workflow.md`)
+## The turn loop (full spec: `_shared/agent-turn-contract.md`)
 ```
-question --> 01 PLAN --> 02 RESEARCH (loop per sub-question) --> 03 REPORT
-             (LLM)        (web search + LLM synthesis)            (LLM, streamed)
+message --> RECEIVE --> RECALL --> [ REASON --> ACT --> OBSERVE ]* --> REMEMBER --> REPLY
+                        (memory)    (model)   (tool)   (result)        (consolidate)
 ```
-Each stage emits SSE events to the client. Stages are code-orchestrated in
-`backend/app/services/research.py`; there is no mid-pipeline branching.
+Each phase emits a `TurnEvent` over SSE so the terminal and the dashboard show the agent
+thinking. Tool-calling is dual-track (PydanticAI native + a manual prompt-JSON fallback)
+behind one seam in `backend/app/agent/generate.py`. Deep Research is one of the tools.
 
-## How the two apps connect
+## Two faces, one brain
 ```
-frontend (browser)  --POST /research/stream (query, provider, model, api_key)-->  backend
-       ^                                                                             |
-       +---------------- text/event-stream of JSON events ----------------------------+
+terminal TUI  (python -m app.cli) ----\
+                                        >--- backend/app/agent (turn loop) --- SQLite memory
+browser dashboard (/chat/stream)  ----/           |                            (~/.assistant/state.db)
+                                               tools: web_search, deep_research,
+                                               calendar (local + 2-way Google/Outlook),
+                                               file I/O (sandboxed), remember/recall
 ```
-- The browser holds the user's API keys (localStorage) and sends one per request.
-- The backend holds no keys and no database. It is stateless.
-- Both sides agree on the event schema in `_shared/api-contract.md` -- change it in
-  one place, then update both apps.
+- The browser holds the user's API keys (localStorage) and sends one per request; the
+  terminal reads a key from the local env / `.env`. The server never persists a key.
+- State IS local: one SQLite file is the brain. Optional calendar sync mirrors events out
+  to Google/Outlook and pulls them back in (off by default -- see `_shared/calendar-sync.md`).
+
+## How the two apps agree
+Both sides share the event schemas in `_shared/` -- change a contract in one place, then
+update both apps: `_shared/api-contract.md` (research SSE) and
+`_shared/agent-turn-contract.md` (chat TurnEvents).
 
 ## Layer map (ICM)
 | Layer | File(s) | Question it answers |
 |---|---|---|
 | 0 | `CLAUDE.md` | Where am I? |
 | 1 | this file | Where do I go? |
-| 2 | `backend/CONTEXT.md`, `frontend/CONTEXT.md`, `*/CONTEXT.md` | What do I do here? |
+| 2 | `backend/CONTEXT.md`, `frontend/CONTEXT.md`, every `*/CONTEXT.md` | What do I do here? |
 | 3 | `_config/`, `_shared/`, `planning/`, `docs/`, `ops/` | What rules apply? |
 | 4 | `backend/app/`, `frontend/app/` + `components/` | What am I working with? |
 
