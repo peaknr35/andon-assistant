@@ -1,8 +1,10 @@
 """Stage evals for workflow run folders: check each stage, and replay a run.
 
-    python -m evals.stages check [RUN_DIR ...]      # offline; default: every run in the runs folder
-    python -m evals.stages judge RUN_DIR            # AI judge: is every report claim in evidence.md?
-    python -m evals.stages replay RUN_DIR --from 03_report [--live-search] [--judge]
+    python -m evals.stages check [RUN ...]      # offline; default: every run in the runs folder
+    python -m evals.stages judge latest         # AI judge: is every report claim in evidence.md?
+    python -m evals.stages replay latest --from 03_report [--live-search] [--judge]
+
+RUN is a run folder path, a run id (its folder name), or ``latest``.
 
 ``check`` holds each stage's output to its contract in workflows/deep_research/NN_*/CONTEXT.md.
 FAIL = the contract is broken; WARN = worth a look (e.g. a file edited after the next stage ran).
@@ -381,18 +383,35 @@ async def replay(run_dir: str | Path, client, from_stage: str, out_root: Optiona
             "search_calls": calls, "judged": judged}
 
 
+def resolve_run_dir(arg: str) -> Path:
+    """A run folder path, a run id (folder name in the runs folder), or ``latest``."""
+    root = runs.runs_root()
+    if arg == "latest":
+        found = sorted((d for d in root.iterdir() if (d / "state.json").exists()),
+                       key=lambda d: d.stat().st_mtime)
+        if not found:
+            raise SystemExit(f"no runs found in {root}")
+        return found[-1]
+    p = Path(arg).expanduser()
+    if not (p / "state.json").exists() and (root / arg / "state.json").exists():
+        p = root / arg
+    if not (p / "state.json").exists():
+        raise SystemExit(f"not a run folder: {arg} (try 'latest', or a folder in {root})")
+    return p
+
+
 def main(argv: Optional[list[str]] = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m evals.stages", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     c = sub.add_parser("check", help="check run folders against the stage contracts (offline)")
-    c.add_argument("run_dirs", nargs="*", help="default: every run in the runs folder")
+    c.add_argument("run_dirs", nargs="*", help="run folders, run ids, or 'latest' (default: every run)")
     r = sub.add_parser("replay", help="re-run a run from a stage and diff the outputs (needs a key)")
-    r.add_argument("run_dir")
+    r.add_argument("run_dir", help="run folder, run id, or 'latest'")
     r.add_argument("--from", dest="from_stage", default="03_report", choices=runs.STAGES)
     r.add_argument("--live-search", action="store_true", help="search the web again instead of replaying")
     r.add_argument("--judge", action="store_true", help="also judge the original and the replay")
     j = sub.add_parser("judge", help="AI judge: is each report claim supported by evidence.md? (needs a key)")
-    j.add_argument("run_dir")
+    j.add_argument("run_dir", help="run folder, run id, or 'latest'")
     j.add_argument("--max-unsupported", type=float, default=0.2, help="FAIL above this share (default 0.2)")
     for p_ in (r, j):
         p_.add_argument("--provider", help="judge/replay provider (default APP_PROVIDER)")
@@ -404,7 +423,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     get_settings.cache_clear()
 
     if args.cmd == "check":
-        dirs = [Path(d) for d in args.run_dirs] or sorted(
+        dirs = [resolve_run_dir(d) for d in args.run_dirs] or sorted(
             d for d in runs.runs_root().iterdir() if (d / "state.json").exists())
         if not dirs:
             print(f"no runs found in {runs.runs_root()}")
@@ -425,6 +444,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     client = build_client(args.provider or os.getenv("APP_PROVIDER", "openai"), key,
                           args.model or os.getenv("APP_MODEL") or None)
 
+    args.run_dir = resolve_run_dir(args.run_dir)
     if args.cmd == "judge":
         j = asyncio.run(judge_report(args.run_dir, client, max_unsupported=args.max_unsupported))
         path = _write_judgement(j, runs.runs_root() / "_evals",

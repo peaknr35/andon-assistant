@@ -26,7 +26,7 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
 - `cd backend && python -m evals.stages replay <run_dir> --from 03_report` (needs a key; add
   `--live-search` to search again; `--judge` to score original vs replay with the same judge).
   Output: `<runs>/_replays/<run>__<stage>_<time>/REPLAY.md` (+ `JUDGE.md` with `--judge`)
-- `cd backend && python -m evals.stages judge <run_dir>` (needs a key; `--provider/--model` to
+- `cd backend && python -m evals.stages judge latest` (or a run folder / run id; needs a key; `--provider/--model` to
   judge with a different model than wrote the report). ~1 model call per 25 claims.
 
 ## Rules

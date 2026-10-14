@@ -129,3 +129,17 @@ def test_cli_check_exit_codes(monkeypatch, capsys):
     runs.open_run(d).write(runs.PLAN_FILE, "# Plan\n\n1. Changed\n")
     assert stages.main(["check", str(d)]) == 1
     assert "FAIL" in capsys.readouterr().out
+
+
+def test_run_dir_accepts_latest_id_or_path(monkeypatch):
+    import time
+    first = _run(monkeypatch)
+    time.sleep(1.1)
+    second = _run(monkeypatch)
+    os.utime(second, None)
+    assert stages.resolve_run_dir("latest") == second
+    assert stages.resolve_run_dir(first.name) == runs.runs_root() / first.name
+    assert stages.resolve_run_dir(str(first)) == first
+    import pytest
+    with pytest.raises(SystemExit):
+        stages.resolve_run_dir("no-such-run")
