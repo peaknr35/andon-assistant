@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-14 -- Shift handoff workflow
+- `workflows/shift_handoff/`: 01 notes -> 02 summary -> 03 issues & risks -> 04 next-shift brief,
+  with stage contracts and plant references (`references/glossary.md`, `format.md`; snapshotted
+  into each run).
+- Cite or abstain: notes are kept verbatim and numbered; every bullet must cite `[L#]`.
+  `check_citations()` flags uncited bullets and citations past the end of the notes; shown at
+  the gate and kept in `state.json`. Thin notes (< 15 words) -> `STOP.md`, no model call.
+- Gates at summary and issues: approve / edit (diff logged) / reject; the next stage reads the
+  edited file. `GET /handoff/runs` + `/handoff/runs/{id}` list and reopen paused handoffs.
+- `/handoff` page (nav: **Handoff**): notes form, streamed stage output, review panel with
+  citation warnings and numbered notes, final brief with copy / download.
+- `evals.stages check` has handoff rules; `judge` checks a brief against the notes; research
+  and handoff decision endpoints refuse each other's runs.
+- Tests: `tests/test_handoff.py` (7).
+
 ## 2026-10-14 -- ICM workflows step 4: stage evals
 - `backend/evals/stages.py`:
   - `check`: offline contract checks for every stage of a run folder. Plan has numbered

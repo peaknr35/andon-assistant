@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .logging_config import configure_logging
-from .routes import chat, health, research
+from .routes import chat, handoff, health, research
 
 settings = get_settings()
 configure_logging(settings.log_level)
@@ -68,6 +68,7 @@ app.add_middleware(
 app.include_router(health.router)
 app.include_router(research.router)
 app.include_router(chat.router)
+app.include_router(handoff.router)
 
 
 @app.get("/", tags=["meta"])

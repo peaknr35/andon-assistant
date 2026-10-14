@@ -24,6 +24,9 @@ sync work -- with no real keys or network (providers + search are mocked).
 - `test_stage_evals.py` -- `evals.stages`: clean / stopped / paused runs pass; plan edited after
   search, invented URLs (finding + report), key on disk, bad stage order, all-gaps without STOP
   are caught; replay uses recorded search, diffs only what changed, leaves the original intact.
+- `test_handoff.py` -- shift handoff over HTTP: both gates with an edit (next stage reads the
+  edited file), citation warnings at the gate, thin-notes STOP, reject / mismatch / unknown,
+  research and handoff runs don't cross, list + load for resuming, citation parser.
 - `test_stage_judge.py` -- the AI judge (claim splitting, scoring, FAIL/WARN thresholds, garbage
   and missing verdicts, batching, CLI output folder) and replay + judge through the **real**
   OpenAI and Anthropic SDK clients with only the HTTP layer mocked (streaming wire formats).

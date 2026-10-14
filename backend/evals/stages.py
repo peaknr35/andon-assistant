@@ -59,9 +59,70 @@ def _recorded_sources(run: Run) -> dict[str, list[dict]]:
     return {b["subquestion"]: b.get("sources", []) for b in json.loads(run.read(runs.SOURCES_FILE))}
 
 
+def _key_leaks(run: Run) -> list[str]:
+    return [str(f.relative_to(run.dir)) for f in run.dir.rglob("*")
+            if f.is_file() and _SECRET.search(f.read_text(encoding="utf-8", errors="replace"))]
+
+
+def check_handoff_run(run: Run) -> list[Check]:
+    """Shift handoff: notes kept verbatim, every bullet cites a real note line, stage order."""
+    from app.services import handoff as ho
+
+    st = run.state()
+    status = st.get("stage_status", {})
+    out: list[Check] = []
+
+    def add(stage, name, ok, detail="", warn=False):
+        out.append(Check(stage, name, "PASS" if ok else ("WARN" if warn else "FAIL"), "" if ok else detail))
+
+    leaks = _key_leaks(run)
+    add("run", "no API key on disk", not leaks and "api_key" not in st, f"key-like text in: {leaks}")
+    for i, s_ in enumerate(ho.STAGES[1:], 1):
+        if status.get(s_) in ("done", "rejected"):
+            add("run", f"{s_} ran after {ho.STAGES[i - 1]}", status.get(ho.STAGES[i - 1]) == "done",
+                f"{s_} is {status.get(s_)} but {ho.STAGES[i - 1]} is {status.get(ho.STAGES[i - 1])}")
+
+    add("01_notes", "notes.md exists", run.path(ho.NOTES_FILE).exists(), "missing")
+    if not run.path(ho.NOTES_FILE).exists():
+        return out
+    n = len(run.read(ho.NOTES_FILE).splitlines())
+    if status.get("01_notes") == "stopped":
+        add("01_notes", "stop is explained in STOP.md", run.path(ho.STOP_FILE).exists(), "missing")
+        add("01_notes", "nothing written after a stop", not run.path(ho.SUMMARY_FILE).exists(), "summary.md exists")
+
+    prev = ho.NOTES_FILE
+    for stage, rel in ho.ARTIFACTS.items():
+        if status.get(stage) not in ("done", "rejected") and not run.path(rel).exists():
+            prev = rel
+            continue
+        text = run.read(rel) if run.path(rel).exists() else ""
+        add(stage, f"{rel.split('/')[-1]} is not empty", bool(text.strip()), "missing or empty")
+        warnings = ho.check_citations(text, n)
+        bad = [w for w in warnings if w.startswith("Cites")]
+        uncited = [w for w in warnings if w.startswith("No note line")]
+        add(stage, "cites only note lines that exist", not bad, "; ".join(bad[:3]))
+        add(stage, "every bullet cites a note line", not uncited,
+            f"{len(uncited)} uncited, e.g. {uncited[0] if uncited else ''}", warn=True)
+        if run.path(prev).exists() and run.path(rel).exists():
+            newer = run.path(prev).stat().st_mtime > run.path(rel).stat().st_mtime + 1
+            add(stage, f"written after {prev.split('/')[-1]} was last changed", not newer,
+                f"{prev} was edited after {rel} was written; L-numbers or content may be stale", warn=True)
+        prev = rel
+    if run.path(ho.SUMMARY_FILE).exists():
+        text = run.read(ho.SUMMARY_FILE).lower()
+        missing = [h for h in ("safety", "quality", "production", "unclear") if f"## {h}" not in text]
+        add("02_summary", "has the required sections", not missing, f"missing: {missing}", warn=True)
+    if run.path(ho.BRIEF_FILE).exists():
+        add("04_brief", "brief leads with safety", "safety" in run.read(ho.BRIEF_FILE).lower(),
+            "no safety section", warn=True)
+    return out
+
+
 def check_run(run_dir: str | Path) -> list[Check]:
     run = runs.open_run(run_dir)
     st = run.state()
+    if st.get("workflow") == "shift_handoff":
+        return check_handoff_run(run)
     status = st.get("stage_status", {})
     out: list[Check] = []
 
@@ -72,10 +133,7 @@ def check_run(run_dir: str | Path) -> list[Check]:
         return run.path(rel).exists()
 
     # --- run-level ---
-    leaks = []
-    for f in run.dir.rglob("*"):
-        if f.is_file() and _SECRET.search(f.read_text(encoding="utf-8", errors="replace")):
-            leaks.append(str(f.relative_to(run.dir)))
+    leaks = _key_leaks(run)
     add("run", "no API key on disk", not leaks and "api_key" not in st, f"key-like text in: {leaks}")
     order = list(runs.STAGES)
     for i, s in enumerate(order[1:], 1):
@@ -162,19 +220,20 @@ def print_checks(name: str, checks: list[Check]) -> None:
 # --- judge: does the evidence support each claim in the report? ---
 
 JUDGE_SYSTEM = (
-    "You are a strict fact-checker for a research report. You get EVIDENCE (the only "
-    "allowed source, split into numbered ## blocks) and numbered CLAIMS taken from the "
-    "report. For each claim choose one verdict:\n"
+    "You are a strict fact-checker for a report. You get EVIDENCE (the only allowed source: "
+    "research findings in numbered ## blocks, or a supervisor's numbered note lines) and "
+    "numbered CLAIMS taken from the report. For each claim choose one verdict:\n"
     "- supported: the evidence states it or directly implies it\n"
     "- partial: part of it is in the evidence, part is not\n"
     "- unsupported: the evidence does not say this (even if it is true in general)\n"
     "- contradicted: the evidence says otherwise\n"
     "- no_claim: no factual content (a heading-like line, transition, or recommendation)\n"
     "A claim that a point could not be answered or lacked sources is supported when the "
-    "evidence marks that block as GAP. Judge only against the evidence, never your own "
+    "evidence marks that block as GAP. Sign-off lines, blanks to fill in and section "
+    "labels are no_claim. Judge only against the evidence, never your own "
     "knowledge. Respond with ONLY a JSON array, one object per claim: "
     '[{"id": 1, "verdict": "supported", "block": 2, "why": "short reason"}]. '
-    "block is the evidence block number that decides it, or null."
+    "block is the evidence block (or note line) number that decides it, or null."
 )
 VERDICTS = ("supported", "partial", "unsupported", "contradicted", "no_claim")
 _SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"(*])")
@@ -231,10 +290,18 @@ async def judge_report(run_dir: str | Path, client, *, batch: int = 25,
                        max_unsupported: float = 0.2) -> dict:
     """Ask ``client`` whether evidence.md supports each claim in report.md."""
     run = runs.open_run(run_dir)
-    if not run.path(runs.REPORT_FILE).exists() or not run.path(runs.EVIDENCE_FILE).exists():
-        raise FileNotFoundError("the run needs both evidence.md and report.md to be judged")
-    evidence = run.read(runs.EVIDENCE_FILE)
-    claims = split_claims(run.read(runs.REPORT_FILE))
+    if run.state().get("workflow") == "shift_handoff":  # judge the brief against the raw notes
+        from app.services import handoff as ho
+        evidence_rel, report_rel = ho.NOTES_FILE, ho.BRIEF_FILE
+    else:
+        evidence_rel, report_rel = runs.EVIDENCE_FILE, runs.REPORT_FILE
+    if not run.path(report_rel).exists() or not run.path(evidence_rel).exists():
+        raise FileNotFoundError(f"the run needs both {evidence_rel} and {report_rel} to be judged")
+    evidence = run.read(evidence_rel)
+    if evidence_rel.endswith("notes.md"):
+        from app.services.handoff import numbered_notes
+        evidence = "NOTES (numbered lines; [L#] in claims refers to these):\n" + numbered_notes(evidence)
+    claims = split_claims(run.read(report_rel))
     results: list[dict] = []
     for start in range(0, len(claims), batch):
         chunk = claims[start:start + batch]
@@ -312,6 +379,9 @@ async def replay(run_dir: str | Path, client, from_stage: str, out_root: Optiona
     if from_stage not in runs.STAGES:
         raise ValueError(f"from_stage must be one of {runs.STAGES}")
     src = runs.open_run(run_dir)
+    if src.state().get("workflow") != runs.WORKFLOW:
+        raise ValueError(f"replay supports deep_research runs only; {src.id} is "
+                         f"{src.state().get('workflow')}")
     out_root = Path(out_root or src.dir.parent / "_replays")
     dest = out_root / f"{src.id}__{from_stage}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     shutil.copytree(src.dir, dest)

@@ -7,7 +7,7 @@ import type { MemoryCandidate, TurnEvent } from "./chatTypes";
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") || "http://localhost:8080";
 
-async function postSSE<T>(
+export async function postSSE<T>(
   path: string,
   body: unknown,
   onEvent: (e: T) => void,

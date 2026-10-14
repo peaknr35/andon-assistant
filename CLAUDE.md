@@ -12,12 +12,12 @@ cited report -- is now one of its tools (`deep_research`). Bring your own model 
 | `FILE-MAP.md` | Generated index of every file (refresh: `ops/scripts/build-file-map.sh`) |
 | `run.ps1` / `setup.ps1` | One-command Windows launch / first-time setup |
 | `_config/` | Factory settings: project, tech stack, conventions, build status |
-| `_shared/` | Contracts: agent-turn, memory-schema, tools, api, providers, research-workflow, calendar-sync |
+| `_shared/` | Contracts: agent-turn, memory-schema, tools, api, providers, research-workflow, shift-handoff, calendar-sync |
 | `_templates/` | Copy-to-create starters: new tool/provider/endpoint/component/skill/decision |
 | `planning/` | Specs, architecture, decision records |
 | `backend/` | FastAPI app: agent loop, memory (SQLite), tools, providers, services, CLI, scripts, tests |
 | `frontend/` | Next.js app: chat dashboard (M2) + the research UI |
-| `workflows/` | Stage contracts for staged pipelines (`deep_research/01_plan -> 02_search -> 03_report`); run output goes to `~/.assistant/runs/` |
+| `workflows/` | Stage contracts for staged pipelines: `deep_research/` (plan -> search -> report) and `shift_handoff/` (notes -> summary -> issues -> brief); run output goes to `~/.assistant/runs/` |
 | `skills/` | (M3) user-editable procedures the agent can follow |
 | `docs/` | Setup guide, demo runbook, calendar-sync setup, API docs, changelog |
 | `ops/` | Deploy scripts and runbooks |
@@ -36,6 +36,7 @@ cited report -- is now one of its tools (`deep_research`). Bring your own model 
 | Add/adjust a provider | `_shared/providers.md` -> `backend/app/providers/` + `frontend/lib/models.ts` |
 | Change calendar sync | `_shared/calendar-sync.md` -> `backend/app/tools/{google,outlook}_calendar.py` + `services/calendar_sync.py` |
 | Change the research steps | `_shared/research-workflow.md` + `workflows/deep_research/` -> `backend/app/services/research.py` + `runs.py` |
+| Change the shift handoff | `_shared/shift-handoff.md` + `workflows/shift_handoff/` -> `backend/app/services/handoff.py` |
 | Work on the UI | `frontend/CONTEXT.md` |
 | Deploy locally | `ops/CONTEXT.md` |
 | Check what is done | `_config/status.md` |

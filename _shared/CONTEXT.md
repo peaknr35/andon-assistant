@@ -16,6 +16,7 @@ authoritative home; the backend and frontend mirror these.
 - `providers.md` -- the provider/model matrix. Mirrored by `backend/app/config.py`
   + `routes/health.py` and `frontend/lib/models.ts`.
 - `research-workflow.md` -- the plan->research->report pipeline (the `deep_research` tool).
+- `shift-handoff.md` -- the shift handoff workflow: stages, cite-or-abstain rule, gates, API, events.
 
 ## Rules
 - Change a contract HERE FIRST, then update every mirror in the same change.

@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { FlaskConical, GitCompare, KeyRound, MessageSquare, Sparkles } from "lucide-react";
+import { ClipboardList, FlaskConical, GitCompare, KeyRound, MessageSquare, Sparkles } from "lucide-react";
 
 import { ApiKeyManager } from "./ApiKeyManager";
 
 const NAV = [
   { href: "/", label: "Assistant", icon: MessageSquare },
   { href: "/research", label: "Research", icon: FlaskConical },
+  { href: "/handoff", label: "Handoff", icon: ClipboardList },
   { href: "/compare", label: "Compare", icon: GitCompare },
 ];
 

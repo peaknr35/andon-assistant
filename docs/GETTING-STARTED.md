@@ -113,6 +113,13 @@ Then open **http://localhost:3000**.
 - `Schedule a PM check for next Monday at 7am` → local calendar
 - `Write a standard-work sheet for <task> and save it as task.md` → writes to the safe workspace folder
 
+**Shift handoff** (the **Handoff** tab): enter the line and shift, paste your end-of-shift
+notes (one thing per line works best), **Start handoff**. You review the summary, then the
+issues, editing anything before you approve; then the next-shift brief is written. Every line
+cites the note it came from (`[L4]`); anything uncited is flagged before you approve. Copy the
+brief or download it as `.md`. A paused handoff can be reopened from **Recent handoffs**.
+Your plant's terms and brief layout live in `workflows/shift_handoff/references/`.
+
 **Terminal instead of browser** (uses `backend/.env`):
 ```bash
 cd backend && .venv/Scripts/python.exe -m app.cli     # Windows

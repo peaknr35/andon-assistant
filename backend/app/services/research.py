@@ -307,6 +307,8 @@ async def decide(run_id: str, req: DecisionRequest, client: LLMClient) -> AsyncI
     ev = EventFactory()
     try:
         run = runs.open_run_by_id(run_id)
+        if run.state().get("workflow") != runs.WORKFLOW:  # e.g. a shift handoff run
+            raise FileNotFoundError
     except FileNotFoundError:
         yield ev.error(f"No research run '{run_id}'.", code="run_not_found")
         return

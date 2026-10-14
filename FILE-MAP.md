@@ -26,6 +26,7 @@ One job: the stable facts about the project that rarely change per run. Referenc
 
 ### _shared/
 One job: the facts BOTH apps (and the terminal) must agree on. This is the
+- `shift-handoff.md`
 - `CONTEXT.md`
 - `agent-turn-contract.md`
 - `api-contract.md`
@@ -84,6 +85,7 @@ One job: persist and recall what is worth keeping, in one local SQLite file. No
 
 ### backend/app/models/
 One job: define and validate the data crossing the API boundary. The event models
+- `handoff.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `chat.py`
@@ -99,6 +101,7 @@ One job: turn `(provider, api_key, model)` into an object with `complete()` and
 
 ### backend/app/routes/
 One job: thin FastAPI handlers that validate input and delegate to the agent/services.
+- `handoff.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `chat.py`
@@ -107,6 +110,7 @@ One job: thin FastAPI handlers that validate input and delegate to the agent/ser
 
 ### backend/app/services/
 One job: work kept out of the route handlers and tools -- the research pipeline, web
+- `handoff.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `calendar_sync.py`
@@ -150,7 +154,7 @@ One job: hold eval cases as JSONL, one case per line.
 
 ### backend/tests/
 One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
-- `test_stage_judge.py`
+- `test_handoff.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
@@ -165,6 +169,7 @@ One job: prove the API, auth flow, provider wiring, the agent turn loop, and cal
 - `test_research_runs.py`
 - `test_research_stream.py`
 - `test_stage_evals.py`
+- `test_stage_judge.py`
 
 ### docs/
 One job: guides a person reads to run, demo, extend, or integrate the app. (Contracts the
@@ -205,6 +210,9 @@ One job: the `/compare` page. One file.
 - `CONTEXT.md`
 - `page.tsx`
 
+### frontend/app/handoff/
+- `page.tsx`
+
 ### frontend/app/research/
 One job: the `/research` page -- the original Deep Research Studio UI, now a sibling
 - `CONTEXT.md`
@@ -212,6 +220,7 @@ One job: the `/research` page -- the original Deep Research Studio UI, now a sib
 
 ### frontend/components/
 One job: all the UI pieces. Pages compose these; components read/write shared state
+- `HandoffInterface.tsx`
 - `ApiKeyManager.tsx`
 - `ApprovalPanel.tsx`
 - `CONTEXT.md`
@@ -244,6 +253,7 @@ One job: hold the app's shared, persistent state. Mounted in `app/providers.tsx`
 
 ### frontend/lib/
 One job: types, the API client, reducers, storage, the model catalog, and export
+- `handoff.ts`
 - `CONTEXT.md`
 - `api.ts`
 - `chatTypes.ts`
@@ -318,3 +328,25 @@ One job: route a research question through three stages, each handing off throug
 
 ### workflows/deep_research/03_report/
 - `CONTEXT.md`
+
+### workflows/shift_handoff/
+One job: turn a supervisor's raw end-of-shift notes into a reviewed, cited brief for the
+- `CONTEXT.md`
+
+### workflows/shift_handoff/01_notes/
+- `CONTEXT.md`
+
+### workflows/shift_handoff/02_summary/
+- `CONTEXT.md`
+
+### workflows/shift_handoff/03_issues/
+- `CONTEXT.md`
+
+### workflows/shift_handoff/04_brief/
+- `CONTEXT.md`
+
+### workflows/shift_handoff/references/
+One job: the plant-specific material the stages read, configured once.
+- `CONTEXT.md`
+- `format.md`
+- `glossary.md`

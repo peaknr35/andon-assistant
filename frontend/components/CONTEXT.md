@@ -8,6 +8,9 @@ through contexts.
   MemoryPanel). Its own CONTEXT.
 - `Header.tsx` -- top nav (Assistant / Research / Compare) + opens the Keys modal.
 - `ResearchInterface.tsx` -- the research view (used by `/research`); "Review plan first" toggle.
+- `HandoffInterface.tsx` -- the `/handoff` page: notes form, stage progress, streamed stage
+  output, review gate with citation warnings and numbered notes, final brief (copy / .md),
+  recent handoffs (reopen a paused one).
 - `ApprovalPanel.tsx` -- the review gate: the stage's file (plan.md) in an editor + approve /
   approve-with-edits / reject; for an andon stop it shows STOP.md and offers retry / close.
 - `CompareView.tsx` -- multi-model compare grid (used by `/compare`).

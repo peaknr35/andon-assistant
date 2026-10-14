@@ -8,7 +8,8 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
 - `deterministic.py` -- offline checks: parsing, tool registry, memory CRUD/recall, file sandbox.
 - `judge.py` -- run a case through `run_turn` and score it (tool choice + LLM judge).
 - `run.py` -- entrypoint.
-- `stages.py` -- workflow run evals. `check` holds every stage of a run folder to its contract
+- `stages.py` -- workflow run evals (deep research + shift handoff; `check` picks the rules by
+  `state.json` `workflow`, `judge` checks a handoff brief against the numbered notes). `check` holds every stage of a run folder to its contract
   (plan has numbered lines; evidence matches the plan; findings and the report cite only URLs
   search returned; all-gaps -> STOP.md; stage order; no API key on disk). `replay` copies a run,
   re-runs it from a stage on the *recorded* search results, checks the copy, and diffs each

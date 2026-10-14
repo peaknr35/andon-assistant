@@ -9,6 +9,7 @@ here so state survives navigation.
   `Header` above the pages, so chat/research/key state persists across route changes.
 - `page.tsx` -- the assistant chat home (renders `ChatWindow`).
 - `research/` -- the `/research` route (the original Deep Research Studio UI).
+- `handoff/` -- the `/handoff` route: shift handoff (notes -> reviewed summary -> issues -> brief).
 - `compare/` -- the `/compare` route.
 - `globals.css` -- theme tokens (light/dark) + component classes + markdown styles.
 

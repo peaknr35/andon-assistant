@@ -10,6 +10,8 @@ logic. No React here.
 - `models.ts` -- provider/model catalog. Mirrors `../../_shared/providers.md`.
 - `api.ts` -- one SSE reader; `streamResearch()`, `streamChat()`, `fetchMemory()`,
   `fetchTrace()`; `BACKEND_URL`.
+- `handoff.ts` -- shift handoff types, SSE calls (`streamHandoff`, `streamHandoffDecision`),
+  `applyHandoffEvent()` reducer, run list / load. Mirrors `_shared/shift-handoff.md`.
 - `research.ts` -- `applyEvent()` reducer for the research view (incl. `await_approval` ->
   `state.approval`, and `done` with `status: paused | rejected`).
 - `storage.ts` -- localStorage keys + sessionStorage state helpers (all try/catch).

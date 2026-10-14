@@ -5,6 +5,7 @@ here are the server side of the SSE contracts.
 
 ## What's here
 - `research.py` -- `Provider` enum; `ResearchRequest` (+ `review_plan`); `DecisionRequest`; `Source`; `ResearchEvent`
+- `handoff.py` -- `HandoffRequest`, `HandoffDecision`, `HandoffEvent` + factory (shift handoff SSE).
   (+ `EventFactory`). Mirrors `_shared/api-contract.md`.
 - `chat.py` -- `ChatRequest`; `TurnEvent` (+ `TurnEventFactory`) with the phase/
   event types. Mirrors `_shared/agent-turn-contract.md`.

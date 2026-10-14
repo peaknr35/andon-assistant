@@ -9,6 +9,9 @@ search, and the calendar pull-sync.
   client, from_stage)` re-runs from a stage using the (possibly edited) files on disk.
   Holds the stage prompts, the sub-question JSON parser, the andon STOP rule, review
   gates (`await_approval`), and `decide(run_id, req, client)` for approve / edit / reject.
+- `handoff.py` -- the shift-handoff workflow: `run_handoff`, `decide` (approve / edit / reject
+  at the 02_summary and 03_issues gates), `list_runs`, `get_run`, and `check_citations()`
+  (cite-or-abstain check on `[L#]` references). Spec: `_shared/shift-handoff.md`.
 - `runs.py` -- run folders (`~/.assistant/runs/<run_id>/`): create/open, `state.json`,
   `trace.jsonl`, and the `plan.md` / `evidence.md` render + parse helpers.
 - `search.py` -- `web_search(query, max_results)`: DuckDuckGo via `ddgs` (no key);

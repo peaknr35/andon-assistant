@@ -72,8 +72,14 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Replay + judge exercised through the real OpenAI/Anthropic SDKs (HTTP mocked); 74 tests
 - [ ] Live replay/judge against a real key (needs the user's key; not runnable in CI)
 
+## Done -- shift handoff workflow (2026-10-14)
+- [x] `workflows/shift_handoff/` (01 notes -> 02 summary -> 03 issues -> 04 brief) + plant references
+- [x] Cite-or-abstain: every bullet cites `[L#]`; code flags uncited / out-of-range at the gate
+- [x] Gates at summary + issues (approve / edit / reject); thin notes -> STOP; runs listed + resumable
+- [x] `/handoff` page; `evals.stages check` + `judge` cover handoff runs; checked in Chromium
+- [x] 82 backend tests (7 new); frontend typecheck clean
+
 ## Next / ideas
-- [ ] Shift-handoff workflow (raw notes -> summary -> issues/risks -> next-shift brief) on the same stage pattern
 - [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
 - [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)
