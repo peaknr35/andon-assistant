@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-14 -- review fixes (PR #1, CodeRabbit)
+- Research: a decision whose resumed stages fail (bad key, provider down) restores the same
+  gate and reports the error, instead of leaving the run stuck on `stage_mismatch`.
+- Memory review: non-UTF-8 candidate files are skipped; one failing hand edit no longer stops
+  the sync; `_finish` records the decision before promoting; a disk error while proposing never
+  breaks a turn; CLI `/approve` survives a candidate decided from the dashboard.
+- Tests pick the newest run deterministically (not by `iterdir()` order); 6 regression tests.
+
 ## 2026-10-14 -- ICM workflows step 4: stage evals
 - `backend/evals/stages.py`:
   - `check`: offline contract checks for every stage of a run folder. Plan has numbered

@@ -184,3 +184,49 @@ def test_without_review_nothing_pauses(client, monkeypatch):
     events, seen = _start(client, monkeypatch, review=False)
     assert "await_approval" not in [e["type"] for e in events]
     assert events[-1]["type"] == "done" and seen
+
+
+def test_failed_resume_restores_the_gate_so_it_can_be_retried(client, monkeypatch):
+    from app.providers.base import ProviderError
+
+    events, seen = _start(client, monkeypatch)
+    run_id = events[-2]["data"]["run_id"]
+
+    class BadKey(FakeLLMClient):
+        async def complete(self, system, user, *, max_tokens=2000):
+            raise ProviderError("Invalid or unauthorized API key.", code="auth", status=401)
+
+    monkeypatch.setattr(research_route, "build_client", lambda *a, **k: BadKey())
+    after = _decide(client, run_id, action="edit",
+                    edited_content="# Plan\n\n1. Andon cord origin\n")
+    assert [e["type"] for e in after][-2:] == ["await_approval", "error"]
+    assert after[-1]["data"]["code"] == "auth"
+    gate = after[-2]["data"]
+    assert gate["stage"] == "01_plan" and "1. Andon cord origin" in gate["artifact_content"]
+    st = runs.open_run_by_id(run_id).state()
+    assert st["awaiting"]["stage"] == "01_plan"
+    assert st["decisions"][-1]["failed"] == "Invalid or unauthorized API key."
+
+    # Fixed key: the same gate accepts a retry and the run finishes on the edited plan.
+    monkeypatch.setattr(research_route, "build_client", lambda *a, **k: FakeLLMClient())
+    final = _decide(client, run_id, action="approve")
+    assert final[-1]["type"] == "done" and "Andon cord origin" in seen
+
+
+def test_failed_retry_after_a_stop_restores_the_stop_gate(client, monkeypatch):
+    from app.providers.base import ProviderError
+
+    events, _ = _start(client, monkeypatch, hits=False)
+    run_id = events[-2]["data"]["run_id"]
+    _decide(client, run_id, action="approve")  # -> andon stop gate at 02_search
+    monkeypatch.setattr(research_svc, "web_search", _searcher([]))
+
+    class Down(FakeLLMClient):
+        async def complete(self, system, user, *, max_tokens=2000):
+            raise ProviderError("Could not reach the provider.", code="provider")
+
+    monkeypatch.setattr(research_route, "build_client", lambda *a, **k: Down())
+    after = _decide(client, run_id, action="approve", stage="02_search")
+    assert after[-2]["type"] == "await_approval" and after[-2]["data"]["reason"] == "stop"
+    assert after[-1]["data"]["code"] == "provider"
+    assert runs.open_run_by_id(run_id).state()["awaiting"]["stage"] == "02_search"

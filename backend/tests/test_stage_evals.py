@@ -36,7 +36,9 @@ def _run(monkeypatch, hits=True, review=False, client=None):
     async def go():
         return [e async for e in research_svc.run_research(req, client or FakeLLM())]
     asyncio.run(go())
-    return [d for d in runs.runs_root().iterdir() if (d / "state.json").exists()][-1]
+    # newest run by creation time (iterdir() order is undefined)
+    return max((d for d in runs.runs_root().iterdir() if (d / "state.json").exists()),
+               key=lambda d: json.loads((d / "state.json").read_text())["created_at"])
 
 
 def _fails(checks):

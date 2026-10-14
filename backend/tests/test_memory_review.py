@@ -154,3 +154,56 @@ async def test_cli_review_commands(env):
     assert [f["text"] for f in store.all_facts()] == ["Prefers metric units"]
     assert candidates.pending() == []
     cli._review_command("/approve 9")  # out of range: message, no crash
+
+
+async def test_non_utf8_candidate_file_is_skipped_not_fatal(env, client):
+    await _turn(env)
+    bad = candidates.candidates_dir() / "20260101T000000_abcdef.md"
+    bad.write_bytes("---\nstatus: pending\n---\nTorque 25 N\xb7m\n".encode("cp1252"))  # ANSI editor
+    events = await _turn(env, FakeClient(picks='["Line 4 runs two shifts"]'))
+    assert _mem(events, "propose") == [["Line 4 runs two shifts"]]
+    assert len(client.get("/memory/candidates").json()["candidates"]) == 3
+
+
+async def test_propose_disk_error_does_not_break_the_turn(env, monkeypatch):
+    def full_disk(*a, **k):
+        raise OSError(28, "No space left on device")
+    monkeypatch.setattr(candidates, "propose", full_disk)
+    events = await _turn(env)
+    assert events[-1].type == "done" and not _mem(events, "propose")
+    assert any(t["role"] == "assistant" for t in store.recent_turns(events[-1].data["conversation_id"]))
+
+
+async def test_one_failing_hand_edit_does_not_stop_the_others(env, monkeypatch):
+    await _turn(env)
+    first, second = candidates.pending()
+    for c in (first, second):
+        c.path.write_text(c.path.read_text().replace("status: pending", "status: approved"))
+    real = candidates._finish
+
+    def flaky(c, status):
+        if c.id == first.id:
+            raise OSError(13, "Permission denied")
+        return real(c, status)
+    monkeypatch.setattr(candidates, "_finish", flaky)
+    out = candidates.sync_hand_edits()
+    assert out["promoted"] == [second.text]
+    assert [f["text"] for f in store.all_facts()] == [second.text]
+
+
+async def test_cli_survives_a_candidate_decided_elsewhere(env, capsys):
+    await _turn(env)
+    first = candidates.pending()[0]
+    candidates.decide(first.id, "reject")  # e.g. from the dashboard, after /review listed it
+    real_pending = candidates.pending
+
+    def stale():  # the CLI still sees the old list
+        return [first] + real_pending()
+    import app.cli as cli_mod
+    orig = cli_mod.candidates.pending
+    cli_mod.candidates.pending = stale
+    try:
+        cli._review_command("/approve all")
+    finally:
+        cli_mod.candidates.pending = orig
+    assert [f["text"] for f in store.all_facts()] == ["Works the night shift on line 4"]

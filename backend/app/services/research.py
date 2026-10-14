@@ -217,7 +217,8 @@ def _pause(run: Run, ev: EventFactory, *, stage: str, reason: str,
         **awaiting,
         "next_stage": awaiting["resume_from"],
         "artifact_content": run.read(runs.PLAN_FILE),
-        "stop_reason": run.read(runs.STOP_FILE) if reason == "stop" else None,
+        "stop_reason": (run.read(runs.STOP_FILE)
+                        if reason == "stop" and run.path(runs.STOP_FILE).exists() else None),
     }
     return ev.await_approval(data)
 
@@ -359,5 +360,22 @@ async def decide(run_id: str, req: DecisionRequest, client: LLMClient) -> AsyncI
         plan_event = ev.plan(runs.parse_plan(run.read(runs.PLAN_FILE)))
         run.trace(plan_event)
         yield plan_event
+    failed: Optional[ResearchEvent] = None
     async for event in resume_research(run.dir, client, awaiting["resume_from"]):
+        if event.type == "error":  # e.g. a rejected key or a provider outage
+            failed = event
+            break
         yield event
+    if failed is not None:
+        # Put the same gate back so the person can retry; otherwise every later decision
+        # would get stage_mismatch and the run would be stuck. Gate first, then the error,
+        # so the UI keeps the review panel open and shows what went wrong.
+        st = run.state()
+        st["decisions"][-1]["failed"] = failed.message
+        run.save_state(st)
+        gate = _pause(run, ev, stage=awaiting["stage"], reason=awaiting["reason"],
+                      allowed=awaiting["allowed_actions"])
+        run.trace(gate)
+        yield gate
+        run.trace(failed)
+        yield failed
