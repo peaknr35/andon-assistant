@@ -68,6 +68,9 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] `python -m evals.stages check`: per-stage contract checks on run folders (offline)
 - [x] `python -m evals.stages replay <run> --from <stage>`: re-run on recorded sources + diff
 - [x] 66 backend tests (8 new); deterministic evals 17/17
+- [x] `python -m evals.stages judge <run>`: AI judge of report claims vs evidence.md (`replay --judge` compares)
+- [x] Replay + judge exercised through the real OpenAI/Anthropic SDKs (HTTP mocked); 74 tests
+- [ ] Live replay/judge against a real key (needs the user's key; not runnable in CI)
 
 ## Next / ideas
 - [ ] Shift-handoff workflow (raw notes -> summary -> issues/risks -> next-shift brief) on the same stage pattern

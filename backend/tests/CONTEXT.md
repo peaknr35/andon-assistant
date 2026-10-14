@@ -24,6 +24,9 @@ sync work -- with no real keys or network (providers + search are mocked).
 - `test_stage_evals.py` -- `evals.stages`: clean / stopped / paused runs pass; plan edited after
   search, invented URLs (finding + report), key on disk, bad stage order, all-gaps without STOP
   are caught; replay uses recorded search, diffs only what changed, leaves the original intact.
+- `test_stage_judge.py` -- the AI judge (claim splitting, scoring, FAIL/WARN thresholds, garbage
+  and missing verdicts, batching, CLI output folder) and replay + judge through the **real**
+  OpenAI and Anthropic SDK clients with only the HTTP layer mocked (streaming wire formats).
 - `test_agent.py` -- the turn loop on the manual backend with a fake client (temp DB).
 - `test_m3.py` -- skills load, calendar disabled-by-default, deterministic evals.
 - `test_calendar_sync.py` -- providers disabled by default, dedup upsert, pull sync with a

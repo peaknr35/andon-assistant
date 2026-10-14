@@ -30,7 +30,9 @@ With review on, the `/research` page does this for you: it pauses after 01_plan 
 ## Checking a run
 `cd backend && python -m evals.stages check <run folder>` holds each stage to the contract
 in its `CONTEXT.md`; `... replay <run folder> --from 03_report` re-runs a stage on the same
-evidence and diffs the output. Add a check there whenever you add a stage rule here.
+evidence and diffs the output; `... judge <run folder>` asks a model whether each report
+claim is in `evidence.md` (03_report's "must not claim anything not in evidence.md").
+Add a check there whenever you add a stage rule here.
 
 ## Links
 - Parent: `../CONTEXT.md` . Spec: `../../_shared/research-workflow.md`

@@ -10,6 +10,12 @@
     diff each stage file; writes `_replays/.../REPLAY.md`. The original is never modified.
 - `runs.parse_evidence()` (inverse of `render_evidence`).
 - Tests: `tests/test_stage_evals.py` (8).
+- `judge`: AI judge -- splits report.md into claims and asks a model whether evidence.md
+  supports each (supported / partial / unsupported / contradicted / no_claim). FAIL on any
+  contradicted claim or > 20% unsupported (`--max-unsupported`); writes `_evals/`. `replay
+  --judge` scores original vs replay with the same judge; `--provider/--model` pick the judge.
+- Tests: `tests/test_stage_judge.py` (8), incl. replay + judge through the real OpenAI and
+  Anthropic SDK clients with only the HTTP layer mocked.
 
 ## 2026-10-14 -- ICM workflows step 3: memory review (controlled promotion)
 - `APP_MEMORY_REVIEW=1` (off by default): facts the consolidation gate picks are written as

@@ -130,12 +130,12 @@ One job: the practical things the agent can do. Each tool is a typed async funct
 
 ### backend/evals/
 One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
-- `stages.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `deterministic.py`
 - `judge.py`
 - `run.py`
+- `stages.py`
 
 ### backend/evals/cases/
 One job: hold eval cases as JSONL, one case per line.
@@ -150,7 +150,7 @@ One job: hold eval cases as JSONL, one case per line.
 
 ### backend/tests/
 One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
-- `test_stage_evals.py`
+- `test_stage_judge.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
@@ -164,6 +164,7 @@ One job: prove the API, auth flow, provider wiring, the agent turn loop, and cal
 - `test_research_approval.py`
 - `test_research_runs.py`
 - `test_research_stream.py`
+- `test_stage_evals.py`
 
 ### docs/
 One job: guides a person reads to run, demo, extend, or integrate the app. (Contracts the

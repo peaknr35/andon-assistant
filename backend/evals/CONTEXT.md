@@ -12,7 +12,10 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
   (plan has numbered lines; evidence matches the plan; findings and the report cite only URLs
   search returned; all-gaps -> STOP.md; stage order; no API key on disk). `replay` copies a run,
   re-runs it from a stage on the *recorded* search results, checks the copy, and diffs each
-  stage's output (`REPLAY.md`). The original run is never touched.
+  stage's output (`REPLAY.md`). The original run is never touched. `judge` is the semantic
+  check: it splits report.md into claims (in code) and asks a model whether evidence.md
+  supports each one (supported / partial / unsupported / contradicted / no_claim). FAIL on any
+  contradicted claim or > 20% unsupported (`--max-unsupported`). Results: `<runs>/_evals/`.
 
 ## Run
 - `cd backend && python -m evals.run`                 (deterministic always; judge if `APP_API_KEY`)
@@ -21,7 +24,10 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
 - `cd backend && python -m evals.stages check`        (every run in ~/.assistant/runs; offline)
 - `cd backend && python -m evals.stages check <run_dir>`
 - `cd backend && python -m evals.stages replay <run_dir> --from 03_report` (needs a key; add
-  `--live-search` to search again). Output: `<runs>/_replays/<run>__<stage>_<time>/REPLAY.md`
+  `--live-search` to search again; `--judge` to score original vs replay with the same judge).
+  Output: `<runs>/_replays/<run>__<stage>_<time>/REPLAY.md` (+ `JUDGE.md` with `--judge`)
+- `cd backend && python -m evals.stages judge <run_dir>` (needs a key; `--provider/--model` to
+  judge with a different model than wrote the report). ~1 model call per 25 claims.
 
 ## Rules
 - Deterministic evals must pass offline (no key, no network); they gate changes.
@@ -29,6 +35,8 @@ One job: two-tier evals -- deterministic checks (offline, no key) + LLM-as-judge
   reads your run folders (read-only) and writes replays only under `_replays/`.
 - Stage checks: FAIL = contract broken (gates changes); WARN = worth a look (e.g. a file
   edited after the next stage ran). Keep each check tied to a stage CONTEXT.md rule.
+- The judge is a model, so it can be wrong: read the per-claim table before trusting a score,
+  and prefer a different (or stronger) model than the one that wrote the report.
 
 ## Where to add a case
 Add a line to `cases/basic.jsonl` (or a new `*.jsonl`): `{id, message, expect_tool?}`.

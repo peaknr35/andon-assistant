@@ -1,15 +1,21 @@
 """Stage evals for workflow run folders: check each stage, and replay a run.
 
     python -m evals.stages check [RUN_DIR ...]      # offline; default: every run in the runs folder
-    python -m evals.stages replay RUN_DIR --from 03_report [--live-search]
+    python -m evals.stages judge RUN_DIR            # AI judge: is every report claim in evidence.md?
+    python -m evals.stages replay RUN_DIR --from 03_report [--live-search] [--judge]
 
 ``check`` holds each stage's output to its contract in workflows/deep_research/NN_*/CONTEXT.md.
 FAIL = the contract is broken; WARN = worth a look (e.g. a file edited after the next stage ran).
 
 ``replay`` copies a run, re-runs it from a stage with the same recorded search results
 (unless ``--live-search``), checks the copy, and diffs each stage's output against the
-original -- so a prompt or model change can be judged on the same evidence. Needs
-APP_API_KEY (+ APP_PROVIDER / APP_MODEL). The original run is never modified.
+original -- so a prompt or model change can be judged on the same evidence.
+
+``judge`` is the semantic check the rules can't do: it splits the report into claims
+(in code) and asks a model whether ``evidence.md`` supports each one. Results go to
+``<runs>/_evals/``. ``judge`` and ``replay`` need APP_API_KEY (+ APP_PROVIDER /
+APP_MODEL, or --provider / --model to judge with a different model). The original run
+is never modified.
 """
 from __future__ import annotations
 
@@ -151,6 +157,144 @@ def print_checks(name: str, checks: list[Check]) -> None:
             print(f"  {c.status}  [{c.stage}] {c.name}: {c.detail}")
 
 
+# --- judge: does the evidence support each claim in the report? ---
+
+JUDGE_SYSTEM = (
+    "You are a strict fact-checker for a research report. You get EVIDENCE (the only "
+    "allowed source, split into numbered ## blocks) and numbered CLAIMS taken from the "
+    "report. For each claim choose one verdict:\n"
+    "- supported: the evidence states it or directly implies it\n"
+    "- partial: part of it is in the evidence, part is not\n"
+    "- unsupported: the evidence does not say this (even if it is true in general)\n"
+    "- contradicted: the evidence says otherwise\n"
+    "- no_claim: no factual content (a heading-like line, transition, or recommendation)\n"
+    "A claim that a point could not be answered or lacked sources is supported when the "
+    "evidence marks that block as GAP. Judge only against the evidence, never your own "
+    "knowledge. Respond with ONLY a JSON array, one object per claim: "
+    '[{"id": 1, "verdict": "supported", "block": 2, "why": "short reason"}]. '
+    "block is the evidence block number that decides it, or null."
+)
+VERDICTS = ("supported", "partial", "unsupported", "contradicted", "no_claim")
+_SENT = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"(*])")
+_SKIP_SECTION = re.compile(r"^#{1,6}\s*(sources|references|bibliography)\b", re.I)
+
+
+def split_claims(report: str, limit: int = 80) -> list[str]:
+    """Report -> checkable sentences. Skips headings, the sources list, link-only lines,
+    code, and fragments under five words."""
+    claims: list[str] = []
+    in_code = skip = False
+    for raw in report.splitlines():
+        line = raw.strip()
+        if line.startswith("```"):
+            in_code = not in_code
+            continue
+        if in_code or not line:
+            continue
+        if line.startswith("#"):
+            skip = bool(_SKIP_SECTION.match(line))
+            continue
+        if skip or re.fullmatch(r"(\*\*)?(sources|references)(:)?(\*\*)?:?", line, re.I):
+            skip = True
+            continue
+        line = re.sub(r"^([-*+]|\d+[.)])\s+", "", line).strip()
+        if re.fullmatch(r"\[?[^\]]*\]?\(?https?://\S+\)?", line) or set(line) <= set("-*_|: "):
+            continue
+        for sent in _SENT.split(line):
+            sent = sent.strip()
+            if len(re.findall(r"[A-Za-z0-9]+", _URL.sub("", sent))) >= 5:
+                claims.append(sent)
+    return claims[:limit]
+
+
+def _parse_verdicts(raw: str) -> dict[int, dict]:
+    m = re.search(r"\[.*\]", raw or "", re.S)
+    try:
+        data = json.loads(m.group(0)) if m else []
+    except json.JSONDecodeError:
+        return {}
+    out = {}
+    for d in data if isinstance(data, list) else []:
+        try:
+            cid = int(d.get("id"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        v = str(d.get("verdict", "")).strip().lower()
+        if v in VERDICTS:
+            out[cid] = {"verdict": v, "block": d.get("block"), "why": str(d.get("why", ""))[:300]}
+    return out
+
+
+async def judge_report(run_dir: str | Path, client, *, batch: int = 25,
+                       max_unsupported: float = 0.2) -> dict:
+    """Ask ``client`` whether evidence.md supports each claim in report.md."""
+    run = runs.open_run(run_dir)
+    if not run.path(runs.REPORT_FILE).exists() or not run.path(runs.EVIDENCE_FILE).exists():
+        raise FileNotFoundError("the run needs both evidence.md and report.md to be judged")
+    evidence = run.read(runs.EVIDENCE_FILE)
+    claims = split_claims(run.read(runs.REPORT_FILE))
+    results: list[dict] = []
+    for start in range(0, len(claims), batch):
+        chunk = claims[start:start + batch]
+        numbered = "\n".join(f"{start + i + 1}. {c}" for i, c in enumerate(chunk))
+        raw = await client.complete(
+            JUDGE_SYSTEM, f"EVIDENCE:\n{evidence}\n\nCLAIMS:\n{numbered}\n\nReturn the JSON array now.",
+            max_tokens=3000,
+        )
+        verdicts = _parse_verdicts(raw)
+        for i, c in enumerate(chunk):
+            cid = start + i + 1
+            v = verdicts.get(cid, {"verdict": "unjudged", "block": None, "why": "judge gave no verdict"})
+            results.append({"id": cid, "claim": c, **v})
+
+    counts = {v: sum(1 for r in results if r["verdict"] == v) for v in (*VERDICTS, "unjudged")}
+    factual = len(results) - counts["no_claim"] - counts["unjudged"]
+    unsupported_share = (counts["unsupported"] / factual) if factual else 0.0
+    score = ((counts["supported"] + 0.5 * counts["partial"]) / factual) if factual else None
+    checks = [
+        Check("judge", "report has checkable claims", "PASS" if results else "WARN",
+              "" if results else "no claims found in report.md"),
+        Check("judge", "no claim contradicts the evidence", "PASS" if not counts["contradicted"] else "FAIL",
+              "" if not counts["contradicted"] else f"{counts['contradicted']} contradicted"),
+        Check("judge", f"unsupported claims <= {max_unsupported:.0%}",
+              "FAIL" if unsupported_share > max_unsupported else ("WARN" if counts["unsupported"] else "PASS"),
+              "" if not counts["unsupported"] else f"{counts['unsupported']}/{factual} unsupported"),
+        Check("judge", "every claim judged", "WARN" if counts["unjudged"] else "PASS",
+              "" if not counts["unjudged"] else f"{counts['unjudged']} without a verdict"),
+    ]
+    return {"run": run.id, "claims": results, "counts": counts, "score": score,
+            "unsupported_share": unsupported_share, "checks": checks,
+            "judge_model": f"{getattr(client, 'provider', '?')}/{getattr(client, 'model', '?')}"}
+
+
+def render_judgement(j: dict) -> str:
+    score = "n/a" if j["score"] is None else f"{j['score']:.0%}"
+    c = j["counts"]
+    lines = [f"# Judge: {j['run']}", "",
+             f"- judge model: {j['judge_model']}",
+             f"- grounded score: {score} (supported + half of partial, over factual claims)",
+             f"- {c['supported']} supported, {c['partial']} partial, {c['unsupported']} unsupported, "
+             f"{c['contradicted']} contradicted, {c['no_claim']} no claim, {c['unjudged']} unjudged", ""]
+    for ch in j["checks"]:
+        lines.append(f"- {ch.status} {ch.name}{': ' + ch.detail if ch.detail else ''}")
+    lines += ["", "| # | verdict | block | claim | why |", "|---|---|---|---|---|"]
+    for r in j["claims"]:
+        cell = lambda t: str(t).replace("|", "\\|").replace("\n", " ")
+        lines.append(f"| {r['id']} | {r['verdict']} | {r['block'] if r['block'] is not None else ''} "
+                     f"| {cell(r['claim'])} | {cell(r['why'])} |")
+    return "\n".join(lines) + "\n"
+
+
+def _write_judgement(j: dict, folder: Path, stem: str) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    md = folder / f"{stem}.md"
+    md.write_text(render_judgement(j), encoding="utf-8")
+    data = {k: v for k, v in j.items() if k != "checks"}
+    data["checks"] = [c.__dict__ for c in j["checks"]]
+    (folder / f"{stem}.json").write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return md
+
+
 # --- replay ---
 
 _STAGE_FILES = {"01_plan": [runs.PLAN_FILE], "02_search": [runs.EVIDENCE_FILE, runs.STOP_FILE],
@@ -158,7 +302,7 @@ _STAGE_FILES = {"01_plan": [runs.PLAN_FILE], "02_search": [runs.EVIDENCE_FILE, r
 
 
 async def replay(run_dir: str | Path, client, from_stage: str, out_root: Optional[Path] = None,
-                 live_search: bool = False) -> dict:
+                 live_search: bool = False, judge_client=None) -> dict:
     """Copy a run, re-run it from ``from_stage``, check the copy, diff against the original."""
     from app.services import research as research_svc
     from app.models.research import Source
@@ -214,9 +358,27 @@ async def replay(run_dir: str | Path, client, from_stage: str, out_root: Optiona
             lines.append(f"- {c.status} [{c.stage}] {c.name}: {c.detail}")
     for rel, d in diffs.items():
         lines += ["", f"## {rel}", "", "```diff", d.rstrip(), "```"]
+    judged = {}
+    if judge_client is not None:
+        for label, d in (("original", src.dir), ("replay", copy.dir)):
+            try:
+                judged[label] = await judge_report(d, judge_client)
+            except FileNotFoundError:
+                continue
+        if judged:
+            lines += ["", "## Judge (same judge model for both)", "",
+                      "| | grounded score | supported | partial | unsupported | contradicted |",
+                      "|---|---|---|---|---|---|"]
+            for label, j in judged.items():
+                c = j["counts"]
+                score = "n/a" if j["score"] is None else f"{j['score']:.0%}"
+                lines.append(f"| {label} | {score} | {c['supported']} | {c['partial']} | "
+                             f"{c['unsupported']} | {c['contradicted']} |")
+            if "replay" in judged:
+                copy.write("JUDGE.md", render_judgement(judged["replay"]))
     copy.write("REPLAY.md", "\n".join(lines) + "\n")
     return {"dir": copy.dir, "events": events, "diffs": diffs, "checks": checks,
-            "search_calls": calls}
+            "search_calls": calls, "judged": judged}
 
 
 def main(argv: Optional[list[str]] = None) -> int:
@@ -228,6 +390,13 @@ def main(argv: Optional[list[str]] = None) -> int:
     r.add_argument("run_dir")
     r.add_argument("--from", dest="from_stage", default="03_report", choices=runs.STAGES)
     r.add_argument("--live-search", action="store_true", help="search the web again instead of replaying")
+    r.add_argument("--judge", action="store_true", help="also judge the original and the replay")
+    j = sub.add_parser("judge", help="AI judge: is each report claim supported by evidence.md? (needs a key)")
+    j.add_argument("run_dir")
+    j.add_argument("--max-unsupported", type=float, default=0.2, help="FAIL above this share (default 0.2)")
+    for p_ in (r, j):
+        p_.add_argument("--provider", help="judge/replay provider (default APP_PROVIDER)")
+        p_.add_argument("--model", help="model (default APP_MODEL)")
     args = ap.parse_args(argv)
     from app.cli import _load_dotenv
     from app.config import get_settings
@@ -250,14 +419,34 @@ def main(argv: Optional[list[str]] = None) -> int:
 
     key = os.getenv("APP_API_KEY", "")
     if not key:
-        print("replay needs APP_API_KEY (+ optional APP_PROVIDER / APP_MODEL) in backend/.env")
+        print(f"{args.cmd} needs APP_API_KEY (+ optional APP_PROVIDER / APP_MODEL) in backend/.env")
         return 2
     from app.providers.base import build_client
-    client = build_client(os.getenv("APP_PROVIDER", "openai"), key, os.getenv("APP_MODEL") or None)
-    res = asyncio.run(replay(args.run_dir, client, args.from_stage, live_search=args.live_search))
+    client = build_client(args.provider or os.getenv("APP_PROVIDER", "openai"), key,
+                          args.model or os.getenv("APP_MODEL") or None)
+
+    if args.cmd == "judge":
+        j = asyncio.run(judge_report(args.run_dir, client, max_unsupported=args.max_unsupported))
+        path = _write_judgement(j, runs.runs_root() / "_evals",
+                                f"{j['run']}__judge_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
+        score = "n/a" if j["score"] is None else f"{j['score']:.0%}"
+        print_checks(f"judge {j['run']} (grounded {score}, {len(j['claims'])} claims)", j["checks"])
+        for r_ in j["claims"]:
+            if r_["verdict"] in ("unsupported", "contradicted"):
+                print(f"  {r_['verdict'].upper():12} #{r_['id']} {r_['claim'][:110]}")
+        print(f"full table: {path}")
+        return 1 if summarize(j["checks"])["FAIL"] else 0
+
+    res = asyncio.run(replay(args.run_dir, client, args.from_stage, live_search=args.live_search,
+                             judge_client=client if args.judge else None))
     print_checks(f"replay -> {res['dir']}", res["checks"])
+    for label, j_ in res["judged"].items():
+        score = "n/a" if j_["score"] is None else f"{j_['score']:.0%}"
+        print(f"  judge {label}: grounded {score}  {j_['counts']}")
     print(f"changed: {', '.join(res['diffs']) or 'nothing'}  (full diff in {res['dir'] / 'REPLAY.md'})")
-    return 1 if summarize(res["checks"])["FAIL"] else 0
+    failed = summarize(res["checks"])["FAIL"] or (
+        "replay" in res["judged"] and summarize(res["judged"]["replay"]["checks"])["FAIL"])
+    return 1 if failed else 0
 
 
 if __name__ == "__main__":

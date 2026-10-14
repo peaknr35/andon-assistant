@@ -56,7 +56,7 @@ cited report -- is now one of its tools (`deep_research`). Bring your own model 
 | Frontend dev | `cd frontend && npm run dev` |
 | Run both (Docker) | `docker compose up --build` |
 | Refresh file index | `bash ops/scripts/build-file-map.sh` |
-| Check research runs / replay a stage | `cd backend && python -m evals.stages check` / `... replay <run> --from 03_report` |
+| Check research runs / judge / replay | `cd backend && python -m evals.stages check` / `... judge <run>` / `... replay <run> --from 03_report --judge` |
 
 ## The one rule
 Secrets stay client-side / local -- the server never persists an API key. Memory is a

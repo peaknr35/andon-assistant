@@ -66,7 +66,10 @@ decision endpoint calls it; it can also be called directly for a run edited by h
   (see `backend/evals/CONTEXT.md` for the list). Exit 1 on any FAIL.
 - `python -m evals.stages replay <run_dir> --from <stage>` -- re-run from a stage on the
   recorded sources (`sources.json`), so a prompt/model change is judged on the same
-  evidence; writes `_replays/.../REPLAY.md` with the checks and a diff per stage file.
+  evidence; writes `_replays/.../REPLAY.md` with the checks and a diff per stage file
+  (`--judge` adds a grounded-score comparison of original vs replay).
+- `python -m evals.stages judge <run_dir>` -- AI judge: each report claim vs `evidence.md`;
+  writes `_evals/<run>__judge_<time>.md/.json`. FAIL on a contradicted claim or > 20% unsupported.
 
 ## Errors
 Any exception is caught at the top of the stage runner and emitted as a single
