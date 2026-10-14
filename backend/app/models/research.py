@@ -19,23 +19,12 @@ class Provider(str, enum.Enum):
     kimi = "kimi"
 
 
-class ResearchRequest(BaseModel):
-    """Validated body for POST /research/stream."""
+class _KeyedRequest(BaseModel):
+    """Provider + model + the user's own key (used for one request, never stored)."""
 
-    query: str = Field(..., min_length=3, max_length=2000)
     provider: Provider
     model: Optional[str] = Field(default=None, max_length=100)
     api_key: str = Field(..., min_length=8, max_length=400, repr=False)
-    max_subquestions: int = Field(default=4, ge=1, le=8)
-    search: bool = True
-
-    @field_validator("query")
-    @classmethod
-    def _strip_query(cls, v: str) -> str:
-        v = v.strip()
-        if len(v) < 3:
-            raise ValueError("query must be at least 3 characters")
-        return v
 
     @field_validator("api_key")
     @classmethod
@@ -54,6 +43,33 @@ class ResearchRequest(BaseModel):
         return v or None
 
 
+class ResearchRequest(_KeyedRequest):
+    """Validated body for POST /research/stream."""
+
+    query: str = Field(..., min_length=3, max_length=2000)
+    max_subquestions: int = Field(default=4, ge=1, le=8)
+    search: bool = True
+    # Pause after 01_plan (and on an andon STOP) for a person to approve/edit/reject.
+    review_plan: bool = False
+
+    @field_validator("query")
+    @classmethod
+    def _strip_query(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("query must be at least 3 characters")
+        return v
+
+
+class DecisionRequest(_KeyedRequest):
+    """Body for POST /research/runs/{run_id}/decision (resume a paused run)."""
+
+    stage: str = Field(..., max_length=40)
+    action: Literal["approve", "edit", "reject"]
+    edited_content: Optional[str] = Field(default=None, max_length=50_000)
+    note: Optional[str] = Field(default=None, max_length=2000)
+
+
 class Source(BaseModel):
     title: str = ""
     url: str = ""
@@ -61,7 +77,7 @@ class Source(BaseModel):
 
 
 EventType = Literal[
-    "status", "plan", "sources", "finding", "token", "report", "done", "error"
+    "status", "plan", "sources", "finding", "token", "report", "await_approval", "done", "error"
 ]
 
 
@@ -128,8 +144,15 @@ class EventFactory:
             {"report": report, "sources": [s.model_dump() for s in sources]},
         )
 
-    def done(self) -> ResearchEvent:
-        return self._mk("done", "done", "Research complete")
+    def await_approval(self, data: dict[str, Any]) -> ResearchEvent:
+        return self._mk("await_approval", "approval", "Waiting for your review", data)
+
+    def done(self, status: str = "complete") -> ResearchEvent:
+        """``status``: complete | paused (awaiting a decision) | rejected."""
+        messages = {"complete": "Research complete", "paused": "Paused for review",
+                    "rejected": "Run rejected"}
+        data = None if status == "complete" else {"status": status}
+        return self._mk("done", "done", messages.get(status, status), data)
 
     def error(self, message: str, code: str = "internal") -> ResearchEvent:
         return self._mk("error", "error", message, {"code": code})

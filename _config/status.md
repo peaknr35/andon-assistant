@@ -50,8 +50,15 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Andon STOP: no sources anywhere -> `STOP.md` + `error(stop)`; per-question GAPs, no guessing
 - [x] Chat `deep_research` tool marks unsourced answers NOT source-backed; 40 tests
 
+## Done -- ICM workflows step 2: approval gates (2026-10-14)
+- [x] `review_plan` on `/research/stream`: pause after 01_plan with `await_approval` + `done(paused)`
+- [x] `POST /research/runs/{run_id}/decision`: approve / edit (diff logged) / reject; resumes the run
+- [x] With review on, an andon STOP is handed to the person (retry / reword / close), not an error
+- [x] `/research` page: "Review plan first" (default on) + `ApprovalPanel`; checked in Chromium
+- [x] 49 backend tests (9 new); frontend typecheck clean
+
 ## Next / ideas
-- [ ] ICM step 2: `await_approval` event + `POST /runs/{id}/decision` (calls `resume_research`)
+- [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day
 - [ ] ICM step 3: `memory_candidates/` review step (behind a setting, off by default)
 - [ ] ICM step 4: eval that replays a run folder and checks each stage
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)

@@ -14,6 +14,9 @@ sync work -- with no real keys or network (providers + search are mocked).
 - `test_research_runs.py` -- run folders: every stage file written, no key on disk, an edited
   `plan.md` changes the searches, an edited `evidence.md` feeds the report, andon STOP + resume,
   GAP / unsourced labelling, chat tool's NOT-source-backed banner.
+- `test_research_approval.py` -- review gates over HTTP: pause before search, approve, edit
+  (diff logged, edited plan searched), reject, stale/second decisions, run-id escapes, bad
+  edits, andon stop handed to the person then retried.
 - `test_agent.py` -- the turn loop on the manual backend with a fake client (temp DB).
 - `test_m3.py` -- skills load, calendar disabled-by-default, deterministic evals.
 - `test_calendar_sync.py` -- providers disabled by default, dedup upsert, pull sync with a

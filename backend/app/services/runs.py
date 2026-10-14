@@ -35,6 +35,13 @@ EVIDENCE_FILE = "02_search/evidence.md"
 SOURCES_FILE = "02_search/sources.json"
 STOP_FILE = "02_search/STOP.md"
 REPORT_FILE = "03_report/report.md"
+REJECTED_FILE = "REJECTED.md"
+
+# Stages whose output a person reviews before the next stage runs (when the run
+# was started with review on). Mirrors "gate: required" in the stage CONTEXT.md.
+REVIEW_GATES = ("01_plan",)
+
+_RUN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,200}$")
 
 
 def runs_root() -> Path:
@@ -93,7 +100,8 @@ class Run:
 
 
 def create_run(query: str, *, search: bool, max_subquestions: int,
-               provider: str, model: str | None, research_id: str) -> Run:
+               provider: str, model: str | None, research_id: str,
+               review: bool = False) -> Run:
     """Make a fresh run folder. Never pass the API key in here."""
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     run = Run(runs_root() / f"{stamp}_{_slug(query)}_{research_id[:6]}")
@@ -111,6 +119,9 @@ def create_run(query: str, *, search: bool, max_subquestions: int,
         "created_at": _now(),
         "updated_at": _now(),
         "stage_status": {s: "pending" for s in STAGES},
+        "gates": list(REVIEW_GATES) if review else [],
+        "awaiting": None,     # set while paused: what a person must decide on
+        "decisions": [],      # audit log: stage, action, at, note, diff
     })
     return run
 
@@ -120,6 +131,17 @@ def open_run(run_dir: str | Path) -> Run:
     if not run.path("state.json").exists():
         raise FileNotFoundError(f"not a run folder (no state.json): {run.dir}")
     return run
+
+
+def open_run_by_id(run_id: str) -> Run:
+    """Open a run from an id that came over HTTP; refuses anything outside runs_root."""
+    if not _RUN_ID.match(run_id or ""):
+        raise FileNotFoundError("bad run id")
+    root = runs_root().resolve()
+    d = (root / run_id).resolve()
+    if d.parent != root:
+        raise FileNotFoundError("bad run id")
+    return open_run(d)
 
 
 # --- 01_plan/plan.md ---

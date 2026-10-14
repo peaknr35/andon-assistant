@@ -10,10 +10,10 @@ import {
   type ReactNode,
 } from "react";
 
-import { streamResearch } from "@/lib/api";
+import { streamDecision, streamResearch } from "@/lib/api";
 import { applyEvent, initialResearchState, newRunState } from "@/lib/research";
 import { loadSession, saveSession } from "@/lib/storage";
-import type { Provider, ResearchState } from "@/lib/types";
+import type { DecisionAction, Provider, ResearchState } from "@/lib/types";
 
 export interface RunParams {
   query: string;
@@ -22,6 +22,14 @@ export interface RunParams {
   apiKey: string;
   maxSubquestions: number;
   search: boolean;
+  reviewPlan: boolean;
+}
+
+export interface DecisionInput {
+  action: DecisionAction;
+  editedContent?: string;
+  note?: string;
+  apiKey: string; // read from the key manager at click time; never kept in state
 }
 
 export interface CompareTarget {
@@ -35,6 +43,7 @@ interface ResearchContextValue {
   runMain: (p: RunParams) => void;
   stopMain: () => void;
   resetMain: () => void;
+  decideMain: (d: DecisionInput) => void;
 
   compareQuery: string;
   compareColumns: ResearchState[];
@@ -94,6 +103,33 @@ export function ResearchProvider({ children }: { children: ReactNode }) {
         apiKey: p.apiKey,
         maxSubquestions: p.maxSubquestions,
         search: p.search,
+        reviewPlan: p.reviewPlan,
+        signal: ctrl.signal,
+      },
+      (e) => setMain((prev) => applyEvent(prev, e)),
+    );
+  }, []);
+
+  const mainRef = useRef(main);
+  mainRef.current = main;
+
+  const decideMain = useCallback((d: DecisionInput) => {
+    const cur = mainRef.current;
+    if (!cur.approval || cur.running) return;
+    mainAbort.current?.abort();
+    const ctrl = new AbortController();
+    mainAbort.current = ctrl;
+    setMain((prev) => ({ ...prev, running: true, error: null, statusMessage: "Sending your decision..." }));
+    void streamDecision(
+      {
+        runId: cur.approval.runId,
+        stage: cur.approval.stage,
+        action: d.action,
+        editedContent: d.editedContent,
+        note: d.note,
+        provider: cur.provider,
+        model: cur.model,
+        apiKey: d.apiKey,
         signal: ctrl.signal,
       },
       (e) => setMain((prev) => applyEvent(prev, e)),
@@ -157,6 +193,7 @@ export function ResearchProvider({ children }: { children: ReactNode }) {
     runMain,
     stopMain,
     resetMain,
+    decideMain,
     compareQuery,
     compareColumns,
     runCompare,

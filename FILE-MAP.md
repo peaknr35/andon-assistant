@@ -106,11 +106,11 @@ One job: thin FastAPI handlers that validate input and delegate to the agent/ser
 
 ### backend/app/services/
 One job: work kept out of the route handlers and tools -- the research pipeline, web
-- `runs.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `calendar_sync.py`
 - `research.py`
+- `runs.py`
 - `search.py`
 
 ### backend/app/tools/
@@ -148,7 +148,7 @@ One job: hold eval cases as JSONL, one case per line.
 
 ### backend/tests/
 One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
-- `test_research_runs.py`
+- `test_research_approval.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
@@ -158,6 +158,7 @@ One job: prove the API, auth flow, provider wiring, the agent turn loop, and cal
 - `test_health.py`
 - `test_m3.py`
 - `test_providers.py`
+- `test_research_runs.py`
 - `test_research_stream.py`
 
 ### docs/
@@ -206,6 +207,7 @@ One job: the `/research` page -- the original Deep Research Studio UI, now a sib
 
 ### frontend/components/
 One job: all the UI pieces. Pages compose these; components read/write shared state
+- `ApprovalPanel.tsx`
 - `ApiKeyManager.tsx`
 - `CONTEXT.md`
 - `CompareView.tsx`

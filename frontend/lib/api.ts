@@ -1,7 +1,7 @@
 // SSE client for both the research stream and the agent chat turn. We POST (so
 // EventSource is unusable) and parse the text/event-stream body from a fetch
 // ReadableStream. One shared reader; two typed entry points.
-import type { Provider, ResearchEvent } from "./types";
+import type { DecisionAction, Provider, ResearchEvent } from "./types";
 import type { TurnEvent } from "./chatTypes";
 
 export const BACKEND_URL =
@@ -80,6 +80,7 @@ export interface StreamParams {
   apiKey: string;
   maxSubquestions?: number;
   search?: boolean;
+  reviewPlan?: boolean;
   signal?: AbortSignal;
 }
 
@@ -96,10 +97,49 @@ export async function streamResearch(
       api_key: params.apiKey,
       max_subquestions: params.maxSubquestions ?? 4,
       search: params.search ?? true,
+      review_plan: params.reviewPlan ?? false,
     },
     onEvent,
     (message, code) =>
       onEvent({ type: "error", stage: "error", message, data: { code }, research_id: "", timestamp: new Date().toISOString() }),
+    params.signal,
+  );
+}
+
+const researchError = (message: string, code: string): ResearchEvent => ({
+  type: "error", stage: "error", message, data: { code }, research_id: "", timestamp: new Date().toISOString(),
+});
+
+// Resume a run paused by `await_approval`. Streams the rest of the run.
+export interface DecisionParams {
+  runId: string;
+  stage: string;
+  action: DecisionAction;
+  editedContent?: string;
+  note?: string;
+  provider: Provider;
+  model: string;
+  apiKey: string;
+  signal?: AbortSignal;
+}
+
+export async function streamDecision(
+  params: DecisionParams,
+  onEvent: (e: ResearchEvent) => void,
+): Promise<void> {
+  await postSSE<ResearchEvent>(
+    `/research/runs/${encodeURIComponent(params.runId)}/decision`,
+    {
+      stage: params.stage,
+      action: params.action,
+      edited_content: params.editedContent,
+      note: params.note || undefined,
+      provider: params.provider,
+      model: params.model || undefined,
+      api_key: params.apiKey,
+    },
+    onEvent,
+    (message, code) => onEvent(researchError(message, code)),
     params.signal,
   );
 }

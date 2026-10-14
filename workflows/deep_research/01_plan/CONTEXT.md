@@ -20,8 +20,9 @@ none
 - Stage 02 searches **exactly the numbered lines**. Anything else in the file is ignored.
 
 ## Approval
-- gate: auto today; becomes `required` with the approval step. A person may reword,
-  add or delete numbered lines, then resume from `02_search`.
+- gate: `required` when the run starts with review on (the `/research` page's
+  "Review plan first", on by default); otherwise auto. The person sees `plan.md`, may
+  reword / add / delete numbered lines, then approves, approves with edits, or rejects.
 
 ## Must not
 - Search the web, answer the question, or write conclusions.

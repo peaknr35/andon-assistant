@@ -25,8 +25,10 @@
 
 ## STOP (andon)
 If search is on and **no** sub-question found any source, write `02_search/STOP.md`
-(what happened + what to do), set the stage to `stopped`, and halt with an `error`
-event (`code: "stop"`). Stage 03 does not run.
+(what happened + what to do), set the stage to `stopped`, and halt. Stage 03 does
+not run. With review on, the stop is handed to the person (`await_approval`,
+`reason: stop`: retry, reword the plan, or close); otherwise it ends with an `error`
+event (`code: "stop"`).
 
 ## Approval
 - gate: auto (a person may still edit `evidence.md` and resume from `03_report`).

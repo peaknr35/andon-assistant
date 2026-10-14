@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, Circle, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, Circle, Loader2, PauseCircle } from "lucide-react";
 
 import type { ResearchState, Stage } from "@/lib/types";
 
@@ -13,6 +13,7 @@ const STAGES: { key: Stage; label: string }[] = [
 const ORDER: Record<string, number> = {
   idle: 0,
   planning: 1,
+  awaiting: 1.5, // plan done, search not started (or stopped at search)
   researching: 2,
   report: 3,
   done: 4,
@@ -62,6 +63,11 @@ export function ProgressStages({ state }: { state: ResearchState }) {
           <span className="ml-auto inline-flex items-center gap-1.5 text-xs" style={{ color: "var(--accent)" }}>
             <span className="pulse-dot h-2 w-2 rounded-full" style={{ background: "var(--accent)" }} />
             live
+          </span>
+        )}
+        {state.stage === "awaiting" && (
+          <span className="ml-auto inline-flex items-center gap-1 text-xs" style={{ color: "var(--accent)" }}>
+            <PauseCircle className="h-3.5 w-3.5" /> waiting for you
           </span>
         )}
         {state.stage === "error" && (

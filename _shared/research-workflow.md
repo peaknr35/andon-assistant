@@ -10,7 +10,8 @@ must-not) live in `workflows/deep_research/NN_<stage>/CONTEXT.md`.
 `~/.assistant/runs/<YYYY-MM-DD_HHMMSS>_<slug>_<id>/` (override: `APP_RUNS_DIR`):
 `question.md`, `state.json` (query, search on/off, max_subquestions, provider, model,
 per-stage status `pending|done|stopped`), `trace.jsonl` (every non-token event), and
-`01_plan/`, `02_search/`, `03_report/`. **The API key is never written here.**
+`01_plan/`, `02_search/`, `03_report/`, plus `REJECTED.md` if a person rejected the run.
+`state.json` also holds `gates`, `awaiting` and the `decisions` log. **The API key is never written here.**
 
 ## 01 PLAN  (stage: planning)
 - Input: `query` from `state.json`.
@@ -44,10 +45,21 @@ Stage 03 does not run; nothing is guessed.
 - Writes `03_report/report.md`; emits `report` with the full text + the de-duplicated
   sources from `sources.json`, then `done`.
 
+## Review gates (human in the loop)
+With `review_plan: true` the run's `state.json` lists `gates: ["01_plan"]`:
+- After `01_plan`, the runner records `awaiting` in `state.json`, emits
+  `await_approval` (the plan text included) and `done{status: paused}`, and stops.
+- On an andon STOP with gates on, it pauses the same way (`reason: stop`) instead of
+  erroring, so the person can retry, reword the plan, or close the run.
+- `decide(run_id, req, client)` (`POST /research/runs/{run_id}/decision`) checks the
+  run is waiting on that stage, applies approve / edit / reject, appends to
+  `state.json` `decisions` (action, note, time, diff for edits), clears `awaiting`,
+  and resumes. Without gates, runs behave exactly as before.
+
 ## Resume
 `resume_research(run_dir, client, from_stage)` re-runs `from_stage` and later stages
-from the files on disk (resets their status to `pending`, removes `STOP.md`). This is
-what approval gates will call after a person approves or edits a stage output.
+from the files on disk (resets their status to `pending`, removes `STOP.md`). The
+decision endpoint calls it; it can also be called directly for a run edited by hand.
 
 ## Errors
 Any exception is caught at the top of the stage runner and emitted as a single

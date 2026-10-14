@@ -21,7 +21,7 @@ none
   sources from `sources.json`.
 
 ## Approval
-- gate: auto today; becomes `required` with the approval step.
+- gate: auto (the report is the last stage; edit `report.md` directly if needed).
 
 ## Must not
 - Search the web, or claim anything not in `evidence.md`.

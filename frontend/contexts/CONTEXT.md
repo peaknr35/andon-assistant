@@ -8,7 +8,8 @@ One job: hold the app's shared, persistent state. Mounted in `app/providers.tsx`
 - `ChatContext.tsx` -- the assistant conversation: messages + per-turn activity
   (phases, tools, memory); `run/stop/reset`; streams via `lib/api.streamChat`; folds
   TurnEvents into message activity; persists to sessionStorage. `useChat()`.
-- `ResearchContext.tsx` -- the research run + compare runs. `useResearch()`.
+- `ResearchContext.tsx` -- the research run + compare runs; `decideMain()` resumes a paused
+  run (the API key is passed in at click time, never kept in persisted state). `useResearch()`.
 
 ## Reads / Writes
 - Reads: `../lib/api.ts` (streaming), `../lib/research.ts`, `../lib/storage.ts`.

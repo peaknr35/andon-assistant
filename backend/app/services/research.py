@@ -13,14 +13,18 @@ writes ``STOP.md`` and the run halts with an ``error`` (code ``stop``).
 """
 from __future__ import annotations
 
+import difflib
 import json
 import logging
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
 from ..config import get_settings
-from ..models.research import EventFactory, ResearchEvent, ResearchRequest, Source
+from ..models.research import (
+    DecisionRequest, EventFactory, ResearchEvent, ResearchRequest, Source,
+)
 from ..providers.base import LLMClient, ProviderError
 from . import runs
 from .runs import Run
@@ -194,28 +198,65 @@ async def _stage_report(run: Run, client: LLMClient, ev: EventFactory) -> AsyncI
 _STAGE_FNS = {"01_plan": _stage_plan, "02_search": _stage_search, "03_report": _stage_report}
 
 
+def _pause(run: Run, ev: EventFactory, *, stage: str, reason: str,
+           allowed: list[str]) -> ResearchEvent:
+    """Record what a person must decide on, and build the await_approval event.
+    In both cases the person reviews the plan and work resumes at 02_search."""
+    awaiting = {
+        "stage": stage,
+        "reason": reason,                       # review | stop
+        "artifact": runs.PLAN_FILE,
+        "resume_from": "02_search",
+        "allowed_actions": allowed,
+    }
+    st = run.state()
+    st["awaiting"] = awaiting
+    run.save_state(st)
+    data = {
+        "run_id": run.id,
+        **awaiting,
+        "next_stage": awaiting["resume_from"],
+        "artifact_content": run.read(runs.PLAN_FILE),
+        "stop_reason": run.read(runs.STOP_FILE) if reason == "stop" else None,
+    }
+    return ev.await_approval(data)
+
+
 async def _run_stages(run: Run, client: LLMClient, ev: EventFactory,
                       from_stage: str) -> AsyncIterator[ResearchEvent]:
-    """Run stages from ``from_stage`` to the end; one ``error`` event on failure."""
+    """Run stages from ``from_stage`` to the end, pausing at review gates; one
+    ``error`` event on failure."""
+
+    def emit(event: ResearchEvent) -> ResearchEvent:
+        run.trace(event)
+        return event
+
     try:
+        gates = run.state().get("gates", [])
         for stage in runs.STAGES[runs.STAGES.index(from_stage):]:
             async for event in _STAGE_FNS[stage](run, client, ev):
                 if event.type != "token":
                     run.trace(event)
                 yield event
             if run.state()["stage_status"][stage] == "stopped":
-                err = ev.error(
+                if gates:  # a person is in the loop: hand the stop to them
+                    yield emit(_pause(run, ev, stage=stage, reason="stop",
+                                      allowed=["approve", "edit", "reject"]))
+                    yield emit(ev.done("paused"))
+                    return
+                yield emit(ev.error(
                     f"Research stopped at {stage}: no usable web sources were found, so "
                     "nothing was guessed. See STOP.md in the run folder. Retry later or "
                     "reword the plan.",
                     code="stop",
-                )
-                run.trace(err)
-                yield err
+                ))
                 return
-        done = ev.done()
-        run.trace(done)
-        yield done
+            if stage in gates:
+                yield emit(_pause(run, ev, stage=stage, reason="review",
+                                  allowed=["approve", "edit", "reject"]))
+                yield emit(ev.done("paused"))
+                return
+        yield emit(ev.done())
     except ProviderError as exc:
         logger.warning("provider error during research: %s", exc.message)
         yield ev.error(exc.message, code=exc.code)
@@ -231,6 +272,7 @@ async def run_research(req: ResearchRequest, client: LLMClient) -> AsyncIterator
         run = runs.create_run(
             req.query, search=req.search, max_subquestions=req.max_subquestions,
             provider=req.provider.value, model=req.model, research_id=ev.research_id,
+            review=req.review_plan,
         )
     except OSError as exc:
         logger.exception("could not create run folder")
@@ -253,4 +295,69 @@ async def resume_research(run_dir: str | Path, client: LLMClient, from_stage: st
         run.set_stage(stage, "pending")
     run.path(runs.STOP_FILE).unlink(missing_ok=True)  # the human has acted on it
     async for event in _run_stages(run, client, ev, from_stage):
+        yield event
+
+
+async def decide(run_id: str, req: DecisionRequest, client: LLMClient) -> AsyncIterator[ResearchEvent]:
+    """Apply a person's decision on a paused run, then stream the rest of it.
+
+    approve -> resume; edit -> write ``edited_content`` to the artifact (diff logged
+    in state.json), then resume; reject -> write REJECTED.md and close the run.
+    """
+    ev = EventFactory()
+    try:
+        run = runs.open_run_by_id(run_id)
+    except FileNotFoundError:
+        yield ev.error(f"No research run '{run_id}'.", code="run_not_found")
+        return
+    st = run.state()
+    ev = EventFactory(st.get("research_id"))
+    awaiting = st.get("awaiting")
+    if not awaiting or awaiting["stage"] != req.stage:
+        current = awaiting["stage"] if awaiting else "none"
+        yield ev.error(f"This run is not waiting on {req.stage} (waiting on: {current}).",
+                       code="stage_mismatch")
+        return
+    if req.action not in awaiting["allowed_actions"]:
+        yield ev.error(f"'{req.action}' is not allowed here.", code="validation")
+        return
+
+    entry = {"stage": req.stage, "action": req.action, "reason": awaiting["reason"],
+             "at": datetime.now(timezone.utc).isoformat(), "note": req.note or ""}
+
+    if req.action == "edit":
+        new = (req.edited_content or "").replace("\r\n", "\n")
+        if awaiting["artifact"] == runs.PLAN_FILE and not runs.parse_plan(new):
+            yield ev.error("The edited plan has no numbered sub-questions (e.g. '1. ...'). "
+                           "Nothing was changed.", code="validation")
+            return
+        old = run.read(awaiting["artifact"])
+        entry["diff"] = "".join(difflib.unified_diff(
+            old.splitlines(keepends=True), new.splitlines(keepends=True),
+            fromfile=f"{awaiting['artifact']} (before)", tofile=f"{awaiting['artifact']} (after)",
+        ))
+        run.write(awaiting["artifact"], new if new.endswith("\n") else new + "\n")
+
+    # Clear the pause before doing anything slow, so a second click gets stage_mismatch.
+    st = run.state()
+    st["awaiting"] = None
+    st["decisions"].append(entry)
+    run.save_state(st)
+
+    if req.action == "reject":
+        run.write(runs.REJECTED_FILE, (
+            f"# Rejected at {req.stage}\n\n"
+            f"- at: {entry['at']}\n- reason shown: {awaiting['reason']}\n\n"
+            f"{req.note or '(no note)'}\n"
+        ))
+        run.set_stage(req.stage, "rejected")
+        run.trace(done := ev.done("rejected"))
+        yield done
+        return
+
+    if req.action == "edit" and awaiting["artifact"] == runs.PLAN_FILE:
+        plan_event = ev.plan(runs.parse_plan(run.read(runs.PLAN_FILE)))
+        run.trace(plan_event)
+        yield plan_event
+    async for event in resume_research(run.dir, client, awaiting["resume_from"]):
         yield event

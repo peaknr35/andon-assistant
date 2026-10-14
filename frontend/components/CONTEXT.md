@@ -7,7 +7,9 @@ through contexts.
 - `chat/` -- the assistant chat UI (ChatWindow, TurnTimeline, PhaseBadge, ToolCallCard,
   MemoryPanel). Its own CONTEXT.
 - `Header.tsx` -- top nav (Assistant / Research / Compare) + opens the Keys modal.
-- `ResearchInterface.tsx` -- the research view (used by `/research`).
+- `ResearchInterface.tsx` -- the research view (used by `/research`); "Review plan first" toggle.
+- `ApprovalPanel.tsx` -- the review gate: the stage's file (plan.md) in an editor + approve /
+  approve-with-edits / reject; for an andon stop it shows STOP.md and offers retry / close.
 - `CompareView.tsx` -- multi-model compare grid (used by `/compare`).
 - `ApiKeyManager.tsx` -- the keys modal (save/import/export/clear).
 - `ModelSelector.tsx` -- provider + model dropdowns with a key-status chip.

@@ -24,7 +24,8 @@ async for event in resume_research(run_dir, client, "02_search"): ...
 ```
 
 Resuming resets that stage and later ones to `pending` and removes any `STOP.md`.
-Approval gates in the UI (next step) will call this after a person approves or edits.
+With review on, the `/research` page does this for you: it pauses after 01_plan and
+`POST /research/runs/{run_id}/decision` applies approve / edit / reject and resumes.
 
 ## Links
 - Parent: `../CONTEXT.md` . Spec: `../../_shared/research-workflow.md`

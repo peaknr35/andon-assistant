@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-14 -- ICM workflows step 2: approval gates
+- `/research/stream` takes `review_plan` (default false; the page sends true by default):
+  the run pauses after 01_plan with `await_approval` (plan text included), then
+  `done{status: paused}`.
+- New `POST /research/runs/{run_id}/decision`: `approve` resumes; `edit` writes the new
+  `plan.md` (must keep numbered lines), logs a diff in `state.json`, and searches the edit;
+  `reject` writes `REJECTED.md`. Errors: `run_not_found`, `stage_mismatch`.
+- With review on, an andon STOP pauses for the person (retry / reword / close) instead of erroring.
+- Frontend: "Review plan first" toggle + `ApprovalPanel`; `streamDecision()`; reducer handles
+  `await_approval` and paused/rejected `done`; a new plan clears stale findings. The key is read
+  from the key manager at click time, never stored in run state.
+- Tests: `tests/test_research_approval.py` (9). Compare mode does not gate.
+
 ## 2026-10-14 -- ICM workflows step 1: file-backed deep research
 - `workflows/deep_research/{01_plan,02_search,03_report}/CONTEXT.md`: stage contracts.
 - `services/runs.py`: per-run folders at `~/.assistant/runs/<run>/` (`APP_RUNS_DIR`) with
