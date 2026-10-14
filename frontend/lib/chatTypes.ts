@@ -29,6 +29,8 @@ export interface TurnActivity {
   tools: ToolActivity[];
   recalled: string[];
   saved: string[];
+  proposed: string[]; // picked by the consolidation gate, waiting for review
+  promoted: string[]; // approved by editing the candidate file
   running: boolean;
 }
 
@@ -39,10 +41,13 @@ export interface ChatMessage {
 }
 
 export function emptyActivity(): TurnActivity {
-  return { phase: "receive", phases: [], tools: [], recalled: [], saved: [], running: true };
+  return { phase: "receive", phases: [], tools: [], recalled: [], saved: [], proposed: [], promoted: [], running: true };
 }
 
 export interface MemoryFact { id: number; text: string; kind: string; source: string; created_at: string; }
+export interface MemoryCandidate {
+  id: string; text: string; kind: string; status: string; proposed_at: string; reason: string; file: string;
+}
 export interface ToolRun { turn_id: number | null; tool: string; args: string; result: string; ok: number; created_at: string; }
 
 export type { Provider };

@@ -23,7 +23,7 @@ Every event:
 | type | phase | meaning | data |
 |---|---|---|---|
 | `phase` | receive/recall/reason/act/observe/remember/reply/done/error | stage marker | - |
-| `memory` | recall / remember | memories read or saved | `{items: [str]}` (name = recall/save) |
+| `memory` | recall / remember | memories read, saved, proposed for review, or promoted | `{items: [str]}` (name = `recall` / `save` / `propose` / `promote`) |
 | `tool_call` | act | a tool is being called | `{args}` (name = tool) |
 | `tool_result` | observe | a tool returned | `{args, result, ok}` (name = tool) |
 | `token` | reply | streamed reply chunk (optional) | `{text}` |
@@ -36,4 +36,12 @@ Every event:
 On failure: a single `error` event, then the stream closes.
 
 ## Read-only endpoints (dashboard)
-`GET /memory -> {facts, counts}` . `GET /trace -> {tool_runs}`.
+`GET /memory -> {facts, counts, review, pending_candidates}` . `GET /trace -> {tool_runs}`.
+
+## Memory review (when `APP_MEMORY_REVIEW=1`)
+- REMEMBER: facts the consolidation gate picks become candidates (`memory` event,
+  name `propose`), not facts. RECALL first applies decisions made by editing candidate
+  files (`memory` event, name `promote`, for any approved).
+- `GET /memory/candidates -> {review, candidates: [{id, text, kind, status, proposed_at, reason, file}], folder}`
+- `POST /memory/candidates/{id}` body `{action: approve|reject, text?}` -> `{id, status, fact_id?, text?}`;
+  404 if it is not pending. See `memory-schema.md`.

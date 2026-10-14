@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-14 -- ICM workflows step 3: memory review (controlled promotion)
+- `APP_MEMORY_REVIEW=1` (off by default): facts the consolidation gate picks are written as
+  markdown candidates in `~/.assistant/memory/candidates/` (`APP_MEMORY_DIR`) instead of saved.
+  Pending candidates are not recalled. The `remember` tool still saves directly.
+- Decide from the dashboard memory panel (edit / approve / reject), the CLI (`/review`,
+  `/approve N|all`, `/reject N`), or by setting `status: approved|rejected` in the file.
+  Approved -> `facts` via `store.add_fact` (dedup) with the new `source=reviewed`.
+  Rejected texts are never proposed again.
+- `facts.md`: read-only markdown mirror of the facts table, regenerated every turn.
+- API: `GET /memory/candidates`, `POST /memory/candidates/{id}`; `GET /memory` adds `review`
+  and `pending_candidates`. Turn events: `memory` names `propose` and `promote`.
+- Tests: `tests/test_memory_review.py` (9); conftest isolates `APP_MEMORY_DIR`.
+
 ## 2026-10-14 -- ICM workflows step 2: approval gates
 - `/research/stream` takes `review_plan` (default false; the page sends true by default):
   the run pauses after 01_plan with `await_approval` (plan text included), then

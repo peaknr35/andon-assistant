@@ -73,7 +73,7 @@ class TurnEventFactory:
                         data={"args": args, "result": result, "ok": ok})
 
     def memory(self, action: str, items: list[str]) -> TurnEvent:
-        phase = "remember" if action == "save" else "recall"
+        phase = "recall" if action == "recall" else "remember"  # save | propose | promote
         return self._mk("memory", phase=phase, name=action, data={"items": items})
 
     def token(self, text: str) -> TurnEvent:
@@ -88,3 +88,10 @@ class TurnEventFactory:
     def done(self, conversation_id=None, turn_db_id=None) -> TurnEvent:
         return self._mk("done", phase="done",
                         data={"conversation_id": conversation_id, "turn_id": turn_db_id})
+
+
+class CandidateDecision(BaseModel):
+    """Body for POST /memory/candidates/{id}: approve (optionally edited) or reject."""
+
+    action: Literal["approve", "reject"]
+    text: Optional[str] = Field(default=None, max_length=1000)

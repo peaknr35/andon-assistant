@@ -129,6 +129,13 @@ cd backend && PYTHONPATH=. .venv/Scripts/python.exe scripts/seed_demo.py
 ```
 Re-running `scripts/seed_demo.py` is always safe — it only adds the sample fixes/events if missing.
 
+**See and control what it remembers.** `~/.assistant/memory/facts.md` is a readable copy
+of everything saved, refreshed after each message. To approve new memories before they
+are kept, add `APP_MEMORY_REVIEW=1` to `backend/.env` and restart. Facts the assistant
+picks up on its own then wait under **Waiting for your review** in the dashboard's Memory
+panel (edit, ✓ or ✗), or type `/review` in the terminal. Anything you ask it to
+"remember" is still saved straight away.
+
 ---
 
 ## 7. If something's off

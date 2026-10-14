@@ -21,3 +21,14 @@ def _isolated_runs_dir(tmp_path, monkeypatch):
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
+def _isolated_memory_dir(tmp_path, monkeypatch):
+    """facts.md mirror + candidates/ go to tmp, never ~/.assistant/memory."""
+    from app.config import get_settings
+
+    monkeypatch.setenv("APP_MEMORY_DIR", str(tmp_path / "memory"))
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()

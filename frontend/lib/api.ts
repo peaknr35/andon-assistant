@@ -2,7 +2,7 @@
 // EventSource is unusable) and parse the text/event-stream body from a fetch
 // ReadableStream. One shared reader; two typed entry points.
 import type { DecisionAction, Provider, ResearchEvent } from "./types";
-import type { TurnEvent } from "./chatTypes";
+import type { MemoryCandidate, TurnEvent } from "./chatTypes";
 
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL?.replace(/\/$/, "") || "http://localhost:8080";
@@ -177,6 +177,29 @@ export async function streamChat(
 }
 
 // --- read-only memory/trace ---
+export async function fetchCandidates(): Promise<{ review: boolean; candidates: MemoryCandidate[]; folder: string | null }> {
+  try {
+    const r = await fetch(`${BACKEND_URL}/memory/candidates`);
+    return r.ok ? r.json() : { review: false, candidates: [], folder: null };
+  } catch {
+    return { review: false, candidates: [], folder: null };
+  }
+}
+
+// Approve (optionally with edited text) or reject one proposed fact. Returns false on failure.
+export async function decideCandidate(id: string, action: "approve" | "reject", text?: string): Promise<boolean> {
+  try {
+    const r = await fetch(`${BACKEND_URL}/memory/candidates/${encodeURIComponent(id)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, text }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchMemory(): Promise<{ facts: any[]; counts: Record<string, number> }> {
   try {
     const r = await fetch(`${BACKEND_URL}/memory`);

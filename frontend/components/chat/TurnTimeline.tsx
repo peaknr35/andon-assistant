@@ -22,6 +22,16 @@ export function TurnTimeline({ activity }: { activity: TurnActivity }) {
           {activity.tools.map((t, i) => <ToolCallCard key={i} tool={t} />)}
         </div>
       )}
+      {(activity.promoted ?? []).length > 0 && (
+        <div className="text-xs" style={{ color: "#38b36b" }}>
+          approved from file: {activity.promoted.join("  .  ")}
+        </div>
+      )}
+      {(activity.proposed ?? []).length > 0 && (
+        <div className="text-xs" style={{ color: "#c266d9" }}>
+          proposed for your review: {activity.proposed.join("  .  ")}
+        </div>
+      )}
       {activity.saved.length > 0 && (
         <div className="text-xs" style={{ color: "#c266d9" }}>
           remembered: {activity.saved.join("  .  ")}

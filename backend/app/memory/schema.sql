@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS facts (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     text        TEXT NOT NULL,
     kind        TEXT NOT NULL DEFAULT 'fact',    -- preference | fact | profile ...
-    source      TEXT NOT NULL DEFAULT 'auto',    -- auto (consolidation) | explicit
+    source      TEXT NOT NULL DEFAULT 'auto',    -- auto (consolidation) | explicit | reviewed
     created_at  TEXT NOT NULL
 );
 

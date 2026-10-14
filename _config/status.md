@@ -57,9 +57,15 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] `/research` page: "Review plan first" (default on) + `ApprovalPanel`; checked in Chromium
 - [x] 49 backend tests (9 new); frontend typecheck clean
 
+## Done -- ICM workflows step 3: memory review (2026-10-14)
+- [x] `APP_MEMORY_REVIEW=1`: consolidation proposes candidates (`~/.assistant/memory/candidates/`)
+- [x] Approve (with edits) / reject from the dashboard, CLI `/review`, or by editing the file
+- [x] Approved -> `facts` with `source=reviewed`; rejected never re-proposed; `remember` stays direct
+- [x] Read-only `facts.md` mirror regenerated after every turn and decision
+- [x] 58 backend tests (9 new); frontend typecheck clean; checked in Chromium
+
 ## Next / ideas
 - [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day
-- [ ] ICM step 3: `memory_candidates/` review step (behind a setting, off by default)
 - [ ] ICM step 4: eval that replays a run folder and checks each stage
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
 - [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)

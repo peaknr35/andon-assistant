@@ -76,6 +76,7 @@ One job: run one conversational turn as a visible sequence of phases, calling to
 
 ### backend/app/memory/
 One job: persist and recall what is worth keeping, in one local SQLite file. No
+- `candidates.py`
 - `CONTEXT.md`
 - `db.py`
 - `schema.sql`
@@ -148,7 +149,7 @@ One job: hold eval cases as JSONL, one case per line.
 
 ### backend/tests/
 One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
-- `test_research_approval.py`
+- `test_memory_review.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
@@ -158,6 +159,7 @@ One job: prove the API, auth flow, provider wiring, the agent turn loop, and cal
 - `test_health.py`
 - `test_m3.py`
 - `test_providers.py`
+- `test_research_approval.py`
 - `test_research_runs.py`
 - `test_research_stream.py`
 
@@ -207,8 +209,8 @@ One job: the `/research` page -- the original Deep Research Studio UI, now a sib
 
 ### frontend/components/
 One job: all the UI pieces. Pages compose these; components read/write shared state
-- `ApprovalPanel.tsx`
 - `ApiKeyManager.tsx`
+- `ApprovalPanel.tsx`
 - `CONTEXT.md`
 - `CompareView.tsx`
 - `ExportMenu.tsx`
