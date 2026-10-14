@@ -77,7 +77,7 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Cite-or-abstain: every bullet cites `[L#]`; code flags uncited / out-of-range at the gate
 - [x] Gates at summary + issues (approve / edit / reject); thin notes -> STOP; runs listed + resumable
 - [x] `/handoff` page; `evals.stages check` + `judge` cover handoff runs; checked in Chromium
-- [x] 82 backend tests (7 new); frontend typecheck clean
+- [x] 89 backend tests (8 new); frontend typecheck clean; failed decisions restore the gate
 
 ## Next / ideas
 - [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day

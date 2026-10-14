@@ -344,8 +344,22 @@ async def decide(run_id: str, req: HandoffDecision, client: LLMClient) -> AsyncI
     nxt = awaiting["next_stage"]
     for s in STAGES[STAGES.index(nxt):]:
         run.set_stage(s, "pending")
+    failed: Optional[HandoffEvent] = None
     async for e in _run_stages(run, client, ev, nxt):
+        if e.type == "error":  # e.g. a rejected key or a provider outage
+            failed = e
+            break
         yield e
+    if failed is not None:
+        # Same as research: put the gate back so the supervisor can retry (gate, then error).
+        st = run.state()
+        st["decisions"][-1]["failed"] = failed.message
+        run.save_state(st)
+        run.set_stage(req.stage, "done")
+        gate = _pause(run, ev, req.stage)
+        run.trace(gate)
+        yield gate
+        yield failed
 
 
 def _summary_status(st: dict) -> str:

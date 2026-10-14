@@ -86,7 +86,7 @@ def _parse(path: Path) -> Optional[Candidate]:
     """Parse a candidate file; None if it is malformed (it is then left alone)."""
     try:
         raw = path.read_text(encoding="utf-8").replace("\r\n", "\n")
-    except OSError:
+    except (OSError, UnicodeDecodeError):  # e.g. saved as ANSI by an old Windows editor
         return None
     m = re.match(r"^---\n(.*?)\n---\n(.*)$", raw, re.S)
     if not m:
@@ -151,12 +151,12 @@ def get(cid: str) -> Optional[Candidate]:
 def _finish(c: Candidate, status: str) -> Optional[int]:
     """Move a decided candidate out of the pending folder; promote if approved."""
     fact_id = None
-    if status == "approved":
-        fact_id = store.add_fact(c.text, c.kind, "reviewed")
     c.status = status
     dest = c.path.parent / ("_done" if status == "approved" else "_rejected") / c.path.name
-    dest.write_text(_render(c), encoding="utf-8")
-    c.path.unlink(missing_ok=True)
+    dest.write_text(_render(c), encoding="utf-8")  # record the decision first...
+    if status == "approved":
+        fact_id = store.add_fact(c.text, c.kind, "reviewed")  # ...then promote (dedups)...
+    c.path.unlink(missing_ok=True)  # ...and only then drop it from the pending queue
     c.path = dest
     return fact_id
 
@@ -182,12 +182,14 @@ def sync_hand_edits() -> dict:
     """Apply decisions a person made by editing files (status: approved / rejected)."""
     promoted, rejected = [], []
     for c in _all_in(candidates_dir()):
-        if c.status == "approved":
-            _finish(c, "approved")
-            promoted.append(c.text)
-        elif c.status == "rejected":
-            _finish(c, "rejected")
-            rejected.append(c.text)
+        if c.status not in ("approved", "rejected"):
+            continue
+        try:
+            _finish(c, c.status)
+        except OSError as exc:
+            logger.warning("could not apply hand edit to %s: %s", c.path, exc)
+            continue
+        (promoted if c.status == "approved" else rejected).append(c.text)
     if promoted:
         export_facts_md()
     return {"promoted": promoted, "rejected": rejected}

@@ -13,7 +13,16 @@
   citation warnings and numbered notes, final brief with copy / download.
 - `evals.stages check` has handoff rules; `judge` checks a brief against the notes; research
   and handoff decision endpoints refuse each other's runs.
-- Tests: `tests/test_handoff.py` (7).
+- A decision whose next stage fails (bad key, provider down) restores the gate, as in research.
+- Tests: `tests/test_handoff.py` (8).
+
+## 2026-10-14 -- review fixes (PR #1, CodeRabbit)
+- Research: a decision whose resumed stages fail (bad key, provider down) restores the same
+  gate and reports the error, instead of leaving the run stuck on `stage_mismatch`.
+- Memory review: non-UTF-8 candidate files are skipped; one failing hand edit no longer stops
+  the sync; `_finish` records the decision before promoting; a disk error while proposing never
+  breaks a turn; CLI `/approve` survives a candidate decided from the dashboard.
+- Tests pick the newest run deterministically (not by `iterdir()` order); 6 regression tests.
 
 ## 2026-10-14 -- ICM workflows step 4: stage evals
 - `backend/evals/stages.py`:

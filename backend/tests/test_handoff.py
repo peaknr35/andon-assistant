@@ -152,7 +152,8 @@ def test_thin_notes_stop_before_any_model_call(client, monkeypatch):
     events, fake = _start(client, monkeypatch, notes="All good, nothing to report.")
     assert events[-1]["type"] == "error" and events[-1]["data"]["code"] == "stop"
     assert fake.prompts == []
-    run = sorted(d for d in runs.runs_root().iterdir() if (d / "state.json").exists())[-1]
+    run = max((d for d in runs.runs_root().iterdir() if (d / "state.json").exists()),
+              key=lambda d: json.loads((d / "state.json").read_text())["created_at"])
     assert (run / handoff.STOP_FILE).exists()
     assert {c.status for c in stages.check_run(run)} == {"PASS"}
 
@@ -198,3 +199,26 @@ def test_citation_parser_ranges_and_none_lines():
     assert w == ['Cites L9 but the notes have 8 lines: "Another [L3, L9]"',
                  'No note line cited: "Uncited item here"']
     assert handoff._refs("[L2-L4]") == [2, 3, 4] and handoff._refs("[L5, L7]") == [5, 7]
+
+
+def test_failed_stage_after_a_decision_restores_the_gate(client, monkeypatch):
+    from app.providers.base import ProviderError
+
+    events, fake = _start(client, monkeypatch)
+    run_id = events[-2]["data"]["run_id"]
+
+    class BadKey(FakeLLM):
+        async def stream(self, system, user, *, max_tokens=4000):
+            raise ProviderError("Invalid or unauthorized API key.", code="auth", status=401)
+            yield ""
+
+    monkeypatch.setattr(handoff_route, "build_client", lambda *a, **k: BadKey())
+    after = _decide(client, run_id, "02_summary", "edit", edited_content=SUMMARY + "- Extra [L1]\n")
+    assert [e["type"] for e in after][-2:] == ["await_approval", "error"]
+    assert after[-2]["data"]["stage"] == "02_summary" and "- Extra [L1]" in after[-2]["data"]["artifact_content"]
+    st = runs.open_run_by_id(run_id).state()
+    assert st["awaiting"]["stage"] == "02_summary" and st["decisions"][-1]["failed"]
+
+    monkeypatch.setattr(handoff_route, "build_client", lambda *a, **k: fake)
+    again = _decide(client, run_id, "02_summary", "approve")
+    assert again[-2]["data"]["stage"] == "03_issues"

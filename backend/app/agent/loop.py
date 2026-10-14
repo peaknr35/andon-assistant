@@ -76,9 +76,13 @@ async def run_turn(
             # Controlled promotion: propose, don't save. A person approves later.
             proposed = []
             for fact in picked:
-                c = await asyncio.to_thread(
-                    candidates.propose, fact, "fact", f"from: {message[:160]}"
-                )
+                try:
+                    c = await asyncio.to_thread(
+                        candidates.propose, fact, "fact", f"from: {message[:160]}"
+                    )
+                except OSError as exc:  # like consolidation itself, never breaks a turn
+                    logger.warning("memory candidate not saved: %s", exc)
+                    continue
                 if c:
                     proposed.append(c.text)
             if proposed:

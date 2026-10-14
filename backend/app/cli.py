@@ -129,7 +129,14 @@ def _review_command(msg: str) -> None:
             return
         action = "approve" if parts[0] == "/approve" else "reject"
         for c in chosen:
-            candidates.decide(c.id, action)
+            try:
+                candidates.decide(c.id, action)
+            except KeyError:  # decided meanwhile, e.g. from the dashboard
+                console.print(f"[yellow]already decided elsewhere:[/] {c.text}")
+                continue
+            except OSError as exc:
+                console.print(f"[red]could not save the decision ({exc}):[/] {c.text}")
+                continue
             console.print(f"[{'green' if action == 'approve' else 'red'}]{action}d:[/] {c.text}")
         items = candidates.pending()
     lines = [f"{i}. {c.text}  [dim]({c.reason})[/]" for i, c in enumerate(items, 1)]
