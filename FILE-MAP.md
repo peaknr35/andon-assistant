@@ -26,10 +26,10 @@ One job: the stable facts about the project that rarely change per run. Referenc
 
 ### _shared/
 One job: the facts BOTH apps (and the terminal) must agree on. This is the
-- `calendar-sync.md`
 - `CONTEXT.md`
 - `agent-turn-contract.md`
 - `api-contract.md`
+- `calendar-sync.md`
 - `memory-schema.md`
 - `providers.md`
 - `research-workflow.md`
@@ -106,6 +106,7 @@ One job: thin FastAPI handlers that validate input and delegate to the agent/ser
 
 ### backend/app/services/
 One job: work kept out of the route handlers and tools -- the research pipeline, web
+- `runs.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `calendar_sync.py`
@@ -146,7 +147,8 @@ One job: hold eval cases as JSONL, one case per line.
 - `seed_demo.py`
 
 ### backend/tests/
-One job: prove the API, auth flow, and provider wiring work -- with no real keys or
+One job: prove the API, auth flow, provider wiring, the agent turn loop, and calendar
+- `test_research_runs.py`
 - `CONTEXT.md`
 - `__init__.py`
 - `conftest.py`
@@ -163,6 +165,7 @@ One job: guides a person reads to run, demo, extend, or integrate the app. (Cont
 - `CALENDAR-SYNC.md`
 - `CONTEXT.md`
 - `DEMO-RUNBOOK.md`
+- `DEMO-SCENARIOS.md`
 - `GETTING-STARTED.md`
 - `api.md`
 - `changelog.md`
@@ -259,3 +262,52 @@ One job: how the backend ships to production (Cloud Run).
 
 ### ops/scripts/
 One job: local run recipes and maintenance scripts.
+- `CONTEXT.md`
+- `build-file-map.sh`
+- `run-local.md`
+
+### planning/
+- `CONTEXT.md`
+
+### planning/architecture/
+One job: durable architecture docs (component map, data flow) referenced when building.
+- `CONTEXT.md`
+- `system-overview.md`
+
+### planning/decisions/
+One job: a dated log of non-obvious technical choices and why they were made.
+- `2026-10-05_provider-abstraction.md`
+- `2026-10-06_agent-architecture.md`
+- `2026-10-12_andon-assistant-and-calendar-sync.md`
+- `CONTEXT.md`
+
+### planning/specs/
+One job: WHAT to build and WHY (not HOW). Implementation follows the backend/frontend
+- `CONTEXT.md`
+- `assistant-spec.md`
+- `backend-spec.md`
+- `frontend-spec.md`
+
+### skills/
+One job: reusable "how to do X" procedures, in plain markdown, surfaced to the agent
+- `CONTEXT.md`
+- `daily-standup.md`
+- `five-whys-rca.md`
+- `summarize-url.md`
+
+### workflows/
+One job: hold the stage contracts for multi-step workflows. Numbered folders are the
+- `CONTEXT.md`
+
+### workflows/deep_research/
+One job: route a research question through three stages, each handing off through a file
+- `CONTEXT.md`
+
+### workflows/deep_research/01_plan/
+- `CONTEXT.md`
+
+### workflows/deep_research/02_search/
+- `CONTEXT.md`
+
+### workflows/deep_research/03_report/
+- `CONTEXT.md`

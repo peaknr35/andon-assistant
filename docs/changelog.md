@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-14 -- ICM workflows step 1: file-backed deep research
+- `workflows/deep_research/{01_plan,02_search,03_report}/CONTEXT.md`: stage contracts.
+- `services/runs.py`: per-run folders at `~/.assistant/runs/<run>/` (`APP_RUNS_DIR`) with
+  `question.md`, `state.json`, `trace.jsonl`, and each stage's file. No API key on disk.
+- `services/research.py`: stages read the previous stage's file (`plan.md`, `evidence.md`),
+  so edits change what runs next; new `resume_research(run_dir, client, from_stage)`.
+- Andon rule: with search on, a sub-question with no sources is a GAP (not guessed); no
+  sources at all -> `02_search/STOP.md` + `error` code `stop`. Search-off runs are labelled
+  NOT source-backed.
+- Chat `deep_research` tool: unsourced answers get a NOT source-backed banner (added in
+  code) and an escalate line. `/research` SSE events are unchanged.
+- Tests: `tests/test_research_runs.py` (8 tests); conftest isolates `APP_RUNS_DIR`.
+
 ## 2026-10-12 -- demo prep + two-way calendar sync
 - Rebrand to "Andon Assistant" (header, page title, config, README, CLAUDE.md).
 - `deep_research` tool sped up ~60s -> ~12s (parallel web searches + one tight cited report);

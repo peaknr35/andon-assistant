@@ -43,7 +43,17 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Two-way calendar sync: Google + Outlook (push + pull + dedup + periodic), off by default
 - [x] Tests: added tests/test_calendar_sync.py
 
+## Done -- ICM workflows step 1: file-backed deep research (2026-10-14)
+- [x] `workflows/deep_research/` stage contracts (01_plan, 02_search, 03_report)
+- [x] `run_research` writes each stage to `~/.assistant/runs/<run>/`; stages hand off via files
+- [x] `resume_research` re-runs from a stage using edited `plan.md` / `evidence.md`
+- [x] Andon STOP: no sources anywhere -> `STOP.md` + `error(stop)`; per-question GAPs, no guessing
+- [x] Chat `deep_research` tool marks unsourced answers NOT source-backed; 40 tests
+
 ## Next / ideas
+- [ ] ICM step 2: `await_approval` event + `POST /runs/{id}/decision` (calls `resume_research`)
+- [ ] ICM step 3: `memory_candidates/` review step (behind a setting, off by default)
+- [ ] ICM step 4: eval that replays a run folder and checks each stage
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
 - [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)
 - [ ] Calendar: live OAuth setup (user's Google Cloud + Entra apps), then verify two-way

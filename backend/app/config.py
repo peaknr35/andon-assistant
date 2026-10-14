@@ -48,9 +48,11 @@ class Settings(BaseSettings):
     calendar_sync_minutes: int = 15
 
     # --- local-first storage ---
-    # Empty -> ~/.assistant/state.db  and  ~/.assistant/workspace
+    # Empty -> ~/.assistant/state.db, ~/.assistant/workspace and ~/.assistant/runs
     db_path: str = ""
     file_root: str = ""
+    # Per-run stage folders for workflows (deep research): plan.md, evidence.md, report.md.
+    runs_dir: str = ""
     # When False (default), file tools may only touch file_root. Flip to allow the
     # whole filesystem (loud warning; path-escape check is always on relative to root).
     file_unrestricted: bool = False

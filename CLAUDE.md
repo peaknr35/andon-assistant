@@ -17,6 +17,7 @@ cited report -- is now one of its tools (`deep_research`). Bring your own model 
 | `planning/` | Specs, architecture, decision records |
 | `backend/` | FastAPI app: agent loop, memory (SQLite), tools, providers, services, CLI, scripts, tests |
 | `frontend/` | Next.js app: chat dashboard (M2) + the research UI |
+| `workflows/` | Stage contracts for staged pipelines (`deep_research/01_plan -> 02_search -> 03_report`); run output goes to `~/.assistant/runs/` |
 | `skills/` | (M3) user-editable procedures the agent can follow |
 | `docs/` | Setup guide, demo runbook, calendar-sync setup, API docs, changelog |
 | `ops/` | Deploy scripts and runbooks |
@@ -34,7 +35,7 @@ cited report -- is now one of its tools (`deep_research`). Bring your own model 
 | Add a tool | `_templates/new-tool.md` -> `backend/app/tools/` |
 | Add/adjust a provider | `_shared/providers.md` -> `backend/app/providers/` + `frontend/lib/models.ts` |
 | Change calendar sync | `_shared/calendar-sync.md` -> `backend/app/tools/{google,outlook}_calendar.py` + `services/calendar_sync.py` |
-| Change the research steps | `_shared/research-workflow.md` -> `backend/app/services/research.py` |
+| Change the research steps | `_shared/research-workflow.md` + `workflows/deep_research/` -> `backend/app/services/research.py` + `runs.py` |
 | Work on the UI | `frontend/CONTEXT.md` |
 | Deploy locally | `ops/CONTEXT.md` |
 | Check what is done | `_config/status.md` |

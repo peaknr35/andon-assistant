@@ -4,12 +4,16 @@ One job: prove the API, auth flow, provider wiring, the agent turn loop, and cal
 sync work -- with no real keys or network (providers + search are mocked).
 
 ## What's here
-- `conftest.py` -- the `client` fixture (FastAPI `TestClient`).
+- `conftest.py` -- the `client` fixture (FastAPI `TestClient`); an autouse fixture points
+  `APP_RUNS_DIR` at `tmp_path` so research runs never write to `~/.assistant`.
 - `test_health.py` -- `/health`, `/`, `/providers`.
 - `test_auth.py` -- request validation (422s) + invalid key -> SSE `error` (auth).
 - `test_providers.py` -- factory builds the right client; OpenAI happy path +
   auth-error mapping + stream chunking (all mocked).
 - `test_research_stream.py` -- full research pipeline event order (fake LLM + fake search).
+- `test_research_runs.py` -- run folders: every stage file written, no key on disk, an edited
+  `plan.md` changes the searches, an edited `evidence.md` feeds the report, andon STOP + resume,
+  GAP / unsourced labelling, chat tool's NOT-source-backed banner.
 - `test_agent.py` -- the turn loop on the manual backend with a fake client (temp DB).
 - `test_m3.py` -- skills load, calendar disabled-by-default, deterministic evals.
 - `test_calendar_sync.py` -- providers disabled by default, dedup upsert, pull sync with a

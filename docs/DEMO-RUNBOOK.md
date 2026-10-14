@@ -116,7 +116,7 @@ Close the demo, return to the deck on **"Built on the way you already work"**.
 |---|---|
 | Red "credit balance too low" | Credit isn't active. Add it (console.anthropic.com), or switch the provider dropdown to a funded one (OpenAI/Kimi). |
 | Replies feel slow | Switch model to **claude-haiku-4-5** in the dropdown. |
-| Deep research is slow / no sources | DuckDuckGo may be rate-limiting. It still answers from general knowledge (fewer citations). Or swap to a quick `Search the web for ...` prompt. |
+| Deep research is slow / no sources | DuckDuckGo may be rate-limiting. In chat it still answers, marked **NOT source-backed**; the `/research` page stops (andon) rather than guess. Or swap to a quick `Search the web for ...` prompt. |
 | A tool errors | The app shows the error inline and keeps going. Just move to the next prompt — don't retry live. |
 | Page won't load / stale | Re-run the server command; check http://localhost:8080/health. Hard-refresh the browser. |
 | Memory panel empty | Re-run the seed: `cd backend && PYTHONPATH=. .venv/Scripts/python.exe scripts/seed_demo.py`, then refresh. |

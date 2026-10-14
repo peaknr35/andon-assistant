@@ -50,7 +50,7 @@ Every event JSON has this shape:
 | `token` | report | one streamed chunk of the final report | `{ "text": "..." }` |
 | `report` | report | the complete final report | `{ "report": str(md), "sources": [Source] }` |
 | `done` | done | research finished successfully | `null` |
-| `error` | error | something failed; stream ends | `{ "code": "validation|auth|provider|search|internal" }` (message in `message`) |
+| `error` | error | something failed; stream ends | `{ "code": "validation|auth|provider|search|internal|stop" }` (`stop` = no web sources found; see `research-workflow.md`) (message in `message`) |
 
 `Source` object:
 ```json

@@ -39,8 +39,8 @@ update both apps: `_shared/api-contract.md` (research SSE) and
 | 0 | `CLAUDE.md` | Where am I? |
 | 1 | this file | Where do I go? |
 | 2 | `backend/CONTEXT.md`, `frontend/CONTEXT.md`, every `*/CONTEXT.md` | What do I do here? |
-| 3 | `_config/`, `_shared/`, `planning/`, `docs/`, `ops/` | What rules apply? |
-| 4 | `backend/app/`, `frontend/app/` + `components/` | What am I working with? |
+| 3 | `_config/`, `_shared/`, `planning/`, `docs/`, `ops/`, `workflows/*/NN_*/CONTEXT.md` | What rules apply? |
+| 4 | `backend/app/`, `frontend/app/` + `components/`; run folders `~/.assistant/runs/<run>/` | What am I working with? |
 
 ## Status
 Build status and what is done live in `_config/status.md`.
