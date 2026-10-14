@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-14 -- ICM workflows step 4: stage evals
+- `backend/evals/stages.py`:
+  - `check`: offline contract checks for every stage of a run folder. Plan has numbered
+    sub-questions; evidence matches the plan (catches a plan edited after the search);
+    findings and the report cite only URLs search returned; all-gaps -> STOP.md; stage
+    order; no API key on disk; WARN when a file was edited after the next stage ran.
+  - `replay`: copy a run, re-run from a stage on the recorded sources, check the copy,
+    diff each stage file; writes `_replays/.../REPLAY.md`. The original is never modified.
+- `runs.parse_evidence()` (inverse of `render_evidence`).
+- Tests: `tests/test_stage_evals.py` (8).
+
 ## 2026-10-14 -- ICM workflows step 3: memory review (controlled promotion)
 - `APP_MEMORY_REVIEW=1` (off by default): facts the consolidation gate picks are written as
   markdown candidates in `~/.assistant/memory/candidates/` (`APP_MEMORY_DIR`) instead of saved.

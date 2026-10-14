@@ -27,5 +27,10 @@ Resuming resets that stage and later ones to `pending` and removes any `STOP.md`
 With review on, the `/research` page does this for you: it pauses after 01_plan and
 `POST /research/runs/{run_id}/decision` applies approve / edit / reject and resumes.
 
+## Checking a run
+`cd backend && python -m evals.stages check <run folder>` holds each stage to the contract
+in its `CONTEXT.md`; `... replay <run folder> --from 03_report` re-runs a stage on the same
+evidence and diffs the output. Add a check there whenever you add a stage rule here.
+
 ## Links
 - Parent: `../CONTEXT.md` . Spec: `../../_shared/research-workflow.md`

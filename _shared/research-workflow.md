@@ -61,6 +61,13 @@ With `review_plan: true` the run's `state.json` lists `gates: ["01_plan"]`:
 from the files on disk (resets their status to `pending`, removes `STOP.md`). The
 decision endpoint calls it; it can also be called directly for a run edited by hand.
 
+## Evals (`backend/evals/stages.py`)
+- `python -m evals.stages check [run_dir]` -- offline contract checks for each stage of a run
+  (see `backend/evals/CONTEXT.md` for the list). Exit 1 on any FAIL.
+- `python -m evals.stages replay <run_dir> --from <stage>` -- re-run from a stage on the
+  recorded sources (`sources.json`), so a prompt/model change is judged on the same
+  evidence; writes `_replays/.../REPLAY.md` with the checks and a diff per stage file.
+
 ## Errors
 Any exception is caught at the top of the stage runner and emitted as a single
 `error` event (code: `auth|provider|search|internal`, or `stop` for the andon stop)

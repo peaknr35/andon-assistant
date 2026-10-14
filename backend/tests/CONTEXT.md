@@ -21,6 +21,9 @@ sync work -- with no real keys or network (providers + search are mocked).
   proposes (nothing saved or recalled); approve-with-edit / reject over HTTP; no re-proposal of
   rejected or known facts; hand-edited (CRLF) files promoted next turn; malformed files skipped;
   remember tool still direct; CLI /review commands.
+- `test_stage_evals.py` -- `evals.stages`: clean / stopped / paused runs pass; plan edited after
+  search, invented URLs (finding + report), key on disk, bad stage order, all-gaps without STOP
+  are caught; replay uses recorded search, diffs only what changed, leaves the original intact.
 - `test_agent.py` -- the turn loop on the manual backend with a fake client (temp DB).
 - `test_m3.py` -- skills load, calendar disabled-by-default, deterministic evals.
 - `test_calendar_sync.py` -- providers disabled by default, dedup upsert, pull sync with a

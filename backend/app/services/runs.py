@@ -189,6 +189,29 @@ def render_evidence(blocks: list[dict]) -> str:
     return "\n".join(out)
 
 
+_BLOCK = re.compile(r"^## (\d+)\. (.+?)\s*$", re.M)
+
+
+def parse_evidence(text: str) -> list[dict]:
+    """Inverse of render_evidence (tolerant of hand edits): one dict per ``## N.`` block
+    with ``subquestion``, ``status`` ('' if missing), ``finding`` and ``source_urls``."""
+    heads = list(_BLOCK.finditer(text))
+    out = []
+    for i, h in enumerate(heads):
+        body = text[h.end(): heads[i + 1].start() if i + 1 < len(heads) else len(text)]
+        status = re.search(r"^\*\*Status:\*\*\s*(.+?)\s*$", body, re.M)
+        finding, _, src = body.partition("\nSources:")
+        if status:
+            finding = finding.replace(status.group(0), "", 1)
+        out.append({
+            "subquestion": h.group(2),
+            "status": status.group(1) if status else "",
+            "finding": finding.strip(),
+            "source_urls": re.findall(r"^- \[.*?\]\((\S+?)\)\s*$", src, re.M),
+        })
+    return out
+
+
 def write_sources(run: Run, blocks: list[dict]) -> None:
     data = [{"subquestion": b["subquestion"],
              "sources": [s.model_dump() for s in b["sources"]]} for b in blocks]

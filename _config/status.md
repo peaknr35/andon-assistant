@@ -64,9 +64,14 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Read-only `facts.md` mirror regenerated after every turn and decision
 - [x] 58 backend tests (9 new); frontend typecheck clean; checked in Chromium
 
+## Done -- ICM workflows step 4: stage evals (2026-10-14)
+- [x] `python -m evals.stages check`: per-stage contract checks on run folders (offline)
+- [x] `python -m evals.stages replay <run> --from <stage>`: re-run on recorded sources + diff
+- [x] 66 backend tests (8 new); deterministic evals 17/17
+
 ## Next / ideas
+- [ ] Shift-handoff workflow (raw notes -> summary -> issues/risks -> next-shift brief) on the same stage pattern
 - [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day
-- [ ] ICM step 4: eval that replays a run folder and checks each stage
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
 - [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)
 - [ ] Calendar: live OAuth setup (user's Google Cloud + Entra apps), then verify two-way
