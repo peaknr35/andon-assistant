@@ -48,9 +48,16 @@ class Settings(BaseSettings):
     calendar_sync_minutes: int = 15
 
     # --- local-first storage ---
-    # Empty -> ~/.assistant/state.db  and  ~/.assistant/workspace
+    # Empty -> ~/.assistant/state.db, ~/.assistant/workspace and ~/.assistant/runs
     db_path: str = ""
     file_root: str = ""
+    # Per-run stage folders for workflows (deep research): plan.md, evidence.md, report.md.
+    runs_dir: str = ""
+    # Readable memory: facts.md mirror + candidates/ review folder (default ~/.assistant/memory).
+    memory_dir: str = ""
+    # When True, facts the consolidation gate picks on its own become *candidates* a person
+    # approves before they are saved or recalled. The remember tool still saves directly.
+    memory_review: bool = False
     # When False (default), file tools may only touch file_root. Flip to allow the
     # whole filesystem (loud warning; path-escape check is always on relative to root).
     file_unrestricted: bool = False

@@ -77,8 +77,13 @@ export function ChatProvider({ children }: { children: ReactNode }) {
             }
             break;
           case "memory":
-            if (e.name === "save") a.saved = (e.data?.items as string[]) ?? [];
-            else a.recalled = (e.data?.items as string[]) ?? [];
+            {
+              const items = (e.data?.items as string[]) ?? [];
+              if (e.name === "save") a.saved = items;
+              else if (e.name === "propose") a.proposed = items;
+              else if (e.name === "promote") a.promoted = items;
+              else a.recalled = items;
+            }
             break;
           case "tool_call":
             a.tools.push({ name: e.name ?? "", args: e.data?.args, running: true });

@@ -15,7 +15,7 @@ from rich.text import Text
 
 from .agent.loop import run_turn
 from .config import get_settings
-from .memory import db, store
+from .memory import candidates, db, store
 
 console = Console()
 
@@ -81,7 +81,8 @@ async def _main() -> None:
         f"[bold]{s.assistant_name}[/] -- local-first agent\n"
         f"provider: {provider}   model: {model or '(default)'}   backend: {s.agent_backend}\n"
         f"memory: {db.db_path()}\n"
-        "commands: /mem (show memory), /exit",
+        "commands: /mem (show memory), /review /approve N|all /reject N (memory candidates), /exit"
+        + ("\nmemory review: ON -- new facts wait for your approval" if candidates.enabled() else ""),
         border_style="cyan",
     ))
     if not api_key:
@@ -103,7 +104,48 @@ async def _main() -> None:
             console.print(Panel("\n".join(f"- {f['text']}" for f in facts) or "(empty)",
                                 title="memory", border_style="magenta"))
             continue
+        if msg.split()[0] in ("/review", "/approve", "/reject"):
+            _review_command(msg)
+            continue
         conv_id = await _one_turn(msg, provider, model, api_key, conv_id)
+
+
+def _review_command(msg: str) -> None:
+    """/review lists pending memory candidates; /approve N|all and /reject N decide."""
+    if not candidates.enabled():
+        console.print("[yellow]Memory review is off. Set APP_MEMORY_REVIEW=1 in backend/.env.[/]")
+        return
+    hand = candidates.sync_hand_edits()
+    for t in hand["promoted"]:
+        console.print(f"[green]promoted (edited file):[/] {t}")
+    items = candidates.pending()
+    parts = msg.split()
+    if parts[0] in ("/approve", "/reject") and len(parts) == 2:
+        chosen = items if parts[1] == "all" and parts[0] == "/approve" else (
+            [items[int(parts[1]) - 1]] if parts[1].isdigit() and 0 < int(parts[1]) <= len(items) else []
+        )
+        if not chosen:
+            console.print("[yellow]No such candidate. Run /review to see the numbers.[/]")
+            return
+        action = "approve" if parts[0] == "/approve" else "reject"
+        for c in chosen:
+            try:
+                candidates.decide(c.id, action)
+            except KeyError:  # decided meanwhile, e.g. from the dashboard
+                console.print(f"[yellow]already decided elsewhere:[/] {c.text}")
+                continue
+            except OSError as exc:
+                console.print(f"[red]could not save the decision ({exc}):[/] {c.text}")
+                continue
+            console.print(f"[{'green' if action == 'approve' else 'red'}]{action}d:[/] {c.text}")
+        items = candidates.pending()
+    lines = [f"{i}. {c.text}  [dim]({c.reason})[/]" for i, c in enumerate(items, 1)]
+    console.print(Panel(
+        "\n".join(lines) or "(nothing waiting)",
+        title=f"memory candidates -- {candidates.candidates_dir()}",
+        subtitle="/approve N|all  /reject N  (or edit the file: status: approved)",
+        border_style="magenta",
+    ))
 
 
 def main() -> None:

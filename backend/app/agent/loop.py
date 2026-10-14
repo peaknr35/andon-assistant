@@ -11,7 +11,7 @@ import logging
 from typing import AsyncIterator, Optional
 
 from ..config import get_settings
-from ..memory import store
+from ..memory import candidates, store
 from ..models.chat import TurnEvent, TurnEventFactory
 from ..providers.base import ProviderError, build_client
 from ..tools.registry import build_registry
@@ -46,6 +46,13 @@ async def run_turn(
         await asyncio.to_thread(store.add_turn, conv, "user", message)
 
         yield ev.phase("recall", "Searching memory")
+        if candidates.enabled():  # pick up approvals a person made by editing files
+            try:
+                hand = await asyncio.to_thread(candidates.sync_hand_edits)
+                if hand["promoted"]:
+                    yield ev.memory("promote", hand["promoted"])
+            except OSError as exc:
+                logger.warning("memory candidate sync failed: %s", exc)
         memories = await asyncio.to_thread(store.recall, message, 6)
         if memories:
             yield ev.memory("recall", [m["text"] for m in memories])
@@ -64,11 +71,31 @@ async def run_turn(
             yield e
 
         yield ev.phase("remember", "Deciding what to keep")
-        saved = await consolidate(client, message, final_text)
-        for fact in saved:
-            await asyncio.to_thread(store.add_fact, fact, "fact", "auto")
-        if saved:
-            yield ev.memory("save", saved)
+        picked = await consolidate(client, message, final_text)
+        if candidates.enabled():
+            # Controlled promotion: propose, don't save. A person approves later.
+            proposed = []
+            for fact in picked:
+                try:
+                    c = await asyncio.to_thread(
+                        candidates.propose, fact, "fact", f"from: {message[:160]}"
+                    )
+                except OSError as exc:  # like consolidation itself, never breaks a turn
+                    logger.warning("memory candidate not saved: %s", exc)
+                    continue
+                if c:
+                    proposed.append(c.text)
+            if proposed:
+                yield ev.memory("propose", proposed)
+        else:
+            for fact in picked:
+                await asyncio.to_thread(store.add_fact, fact, "fact", "auto")
+            if picked:
+                yield ev.memory("save", picked)
+        try:  # keep the readable facts.md mirror current (also covers the remember tool)
+            await asyncio.to_thread(candidates.export_facts_md)
+        except OSError as exc:
+            logger.warning("facts.md export failed: %s", exc)
 
         a_turn = await asyncio.to_thread(
             store.add_turn, conv, "assistant", final_text, {"backend": backend}

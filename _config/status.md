@@ -43,7 +43,38 @@ calendar sync landed 2026-10-12. Calendar sync ships OFF by default (needs OAuth
 - [x] Two-way calendar sync: Google + Outlook (push + pull + dedup + periodic), off by default
 - [x] Tests: added tests/test_calendar_sync.py
 
+## Done -- ICM workflows step 1: file-backed deep research (2026-10-14)
+- [x] `workflows/deep_research/` stage contracts (01_plan, 02_search, 03_report)
+- [x] `run_research` writes each stage to `~/.assistant/runs/<run>/`; stages hand off via files
+- [x] `resume_research` re-runs from a stage using edited `plan.md` / `evidence.md`
+- [x] Andon STOP: no sources anywhere -> `STOP.md` + `error(stop)`; per-question GAPs, no guessing
+- [x] Chat `deep_research` tool marks unsourced answers NOT source-backed; 40 tests
+
+## Done -- ICM workflows step 2: approval gates (2026-10-14)
+- [x] `review_plan` on `/research/stream`: pause after 01_plan with `await_approval` + `done(paused)`
+- [x] `POST /research/runs/{run_id}/decision`: approve / edit (diff logged) / reject; resumes the run
+- [x] With review on, an andon STOP is handed to the person (retry / reword / close), not an error
+- [x] `/research` page: "Review plan first" (default on) + `ApprovalPanel`; checked in Chromium
+- [x] 49 backend tests (9 new); frontend typecheck clean
+
+## Done -- ICM workflows step 3: memory review (2026-10-14)
+- [x] `APP_MEMORY_REVIEW=1`: consolidation proposes candidates (`~/.assistant/memory/candidates/`)
+- [x] Approve (with edits) / reject from the dashboard, CLI `/review`, or by editing the file
+- [x] Approved -> `facts` with `source=reviewed`; rejected never re-proposed; `remember` stays direct
+- [x] Read-only `facts.md` mirror regenerated after every turn and decision
+- [x] 58 backend tests (9 new); frontend typecheck clean; checked in Chromium
+
+## Done -- ICM workflows step 4: stage evals (2026-10-14)
+- [x] `python -m evals.stages check`: per-stage contract checks on run folders (offline)
+- [x] `python -m evals.stages replay <run> --from <stage>`: re-run on recorded sources + diff
+- [x] 66 backend tests (8 new); deterministic evals 17/17
+- [x] `python -m evals.stages judge <run>`: AI judge of report claims vs evidence.md (`replay --judge` compares)
+- [x] Replay + judge exercised through the real OpenAI/Anthropic SDKs (HTTP mocked); 74 tests
+- [ ] Live replay/judge against a real key (needs the user's key; not runnable in CI)
+
 ## Next / ideas
+- [ ] Shift-handoff workflow (raw notes -> summary -> issues/risks -> next-shift brief) on the same stage pattern
+- [ ] List paused runs (`GET /research/runs`) so a gate can be picked up from another tab/day
 - [ ] Token-streamed replies (manual backend); agent.iter live streaming (PydanticAI)
 - [ ] FTS5 / sqlite-vec recall (swap behind `store.recall`)
 - [ ] Calendar: live OAuth setup (user's Google Cloud + Entra apps), then verify two-way

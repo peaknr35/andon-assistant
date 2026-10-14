@@ -15,7 +15,8 @@ and memory. Pure functions we own; the model mechanics live behind `generate.py`
 
 ## Reads / Writes
 - Reads: `../providers` (model), `../tools` (registry), `../memory/store` (recall/history).
-- Writes: memory (turns, facts, tool_runs) via `../memory/store`. Yields events only.
+- Writes: memory (turns, facts, tool_runs) via `../memory/store`; with memory review on,
+  proposals via `../memory/candidates` instead of facts. Yields events only.
 
 ## Rules
 - The loop stays legible top-to-bottom; new control flow goes here, not in a tool.

@@ -36,6 +36,18 @@ Event order: `status(planning)` → `plan` → per sub-question
 `status(researching)` → `sources` → `finding` → `status(report)` →
 many `token` → `report` → `done`. On failure: one `error` event.
 
+With `"review_plan": true` the stream instead ends after the plan with
+`await_approval` → `done` (`data.status = "paused"`). Resume it with
+`POST /research/runs/{run_id}/decision` (`run_id` comes from `await_approval.data`):
+
+```bash
+curl -N -X POST http://localhost:8080/research/runs/<run_id>/decision \
+  -H 'Content-Type: application/json' \
+  -d '{"stage":"01_plan","action":"approve","provider":"openai","api_key":"sk-..."}'
+```
+`action` is `approve`, `edit` (send the full new plan as `edited_content`) or `reject`.
+Full spec: `_shared/api-contract.md` → "Approval gates".
+
 ### curl example
 ```bash
 curl -N -X POST http://localhost:8080/research/stream \

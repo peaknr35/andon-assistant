@@ -109,7 +109,7 @@ export function ChatWindow() {
       </div>
 
       <div className="hidden lg:block">
-        <MemoryPanel refreshKey={messages.length} />
+        <MemoryPanel refreshKey={`${messages.length}-${running}`} />
       </div>
     </div>
   );

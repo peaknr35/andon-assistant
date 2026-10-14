@@ -4,9 +4,11 @@ One job: thin FastAPI handlers that validate input and delegate to the agent/ser
 
 ## What's here
 - `health.py` -- `GET/HEAD /health` + `GET /providers` (the model catalog).
-- `research.py` -- `POST /research/stream`: the research pipeline as SSE.
-- `chat.py` -- `POST /chat/stream` (the agent turn, SSE) + read-only `GET /memory`
-  and `GET /trace` for the dashboard.
+- `research.py` -- `POST /research/stream`: the research pipeline as SSE;
+  `POST /research/runs/{run_id}/decision`: approve / edit / reject a paused run (SSE).
+- `chat.py` -- `POST /chat/stream` (the agent turn, SSE) + `GET /memory` and `GET /trace`
+  for the dashboard + the memory review step: `GET /memory/candidates`,
+  `POST /memory/candidates/{id}` (approve / reject).
 - `__init__.py`
 
 ## Reads / Writes

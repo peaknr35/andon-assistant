@@ -22,7 +22,7 @@ contexts/
 lib/
   types.ts          SSE event + state types (mirror of the API contract)
   models.ts         provider/model catalog
-  api.ts            streamResearch(): POST + ReadableStream SSE parser
+  api.ts            streamResearch() / streamDecision(): POST + ReadableStream SSE parser
   research.ts       applyEvent() reducer (shared by main + compare)
   storage.ts        localStorage keys + sessionStorage state helpers
   googleDocs.ts     copy-for-Docs + OAuth create-doc

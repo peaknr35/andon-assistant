@@ -15,6 +15,7 @@ export type EventType =
   | "finding"
   | "token"
   | "report"
+  | "await_approval"
   | "done"
   | "error";
 
@@ -39,8 +40,23 @@ export type Stage =
   | "planning"
   | "researching"
   | "report"
+  | "awaiting"
   | "done"
   | "error";
+
+export type DecisionAction = "approve" | "edit" | "reject";
+
+// A run paused by `await_approval` (see _shared/api-contract.md "Approval gates").
+export interface Approval {
+  runId: string;
+  stage: string; // the stage under review: "01_plan", or "02_search" for a stop
+  nextStage: string;
+  reason: "review" | "stop";
+  artifactPath: string; // relative to the run folder, e.g. "01_plan/plan.md"
+  content: string; // the artifact as the backend wrote it
+  allowedActions: DecisionAction[];
+  stopReason: string | null; // STOP.md text when reason = "stop"
+}
 
 export interface ResearchState {
   id: string | null;
@@ -58,4 +74,5 @@ export interface ResearchState {
   startedAt: number | null;
   finishedAt: number | null;
   running: boolean;
+  approval: Approval | null; // set while a run waits on a person
 }

@@ -10,7 +10,8 @@ logic. No React here.
 - `models.ts` -- provider/model catalog. Mirrors `../../_shared/providers.md`.
 - `api.ts` -- one SSE reader; `streamResearch()`, `streamChat()`, `fetchMemory()`,
   `fetchTrace()`; `BACKEND_URL`.
-- `research.ts` -- `applyEvent()` reducer for the research view.
+- `research.ts` -- `applyEvent()` reducer for the research view (incl. `await_approval` ->
+  `state.approval`, and `done` with `status: paused | rejected`).
 - `storage.ts` -- localStorage keys + sessionStorage state helpers (all try/catch).
 - `googleDocs.ts` -- copy-for-Docs + OAuth create-doc.
 

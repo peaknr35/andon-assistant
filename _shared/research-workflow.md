@@ -1,41 +1,82 @@
 # Research Workflow
 
-The deep-research pipeline, implemented in `backend/app/services/research.py` as a
-single async generator that yields SSE events. Three stages, code-orchestrated.
+The deep-research pipeline, implemented in `backend/app/services/research.py` as async
+generators that yield SSE events. Three stages, **file-backed**: each stage reads the
+previous stage's file from the run folder and writes its own, so a person can edit a
+stage output and resume from the next stage. Stage contracts (inputs, tools, output,
+must-not) live in `workflows/deep_research/NN_<stage>/CONTEXT.md`.
+
+## Run folder (`backend/app/services/runs.py`)
+`~/.assistant/runs/<YYYY-MM-DD_HHMMSS>_<slug>_<id>/` (override: `APP_RUNS_DIR`):
+`question.md`, `state.json` (query, search on/off, max_subquestions, provider, model,
+per-stage status `pending|done|stopped`), `trace.jsonl` (every non-token event), and
+`01_plan/`, `02_search/`, `03_report/`, plus `REJECTED.md` if a person rejected the run.
+`state.json` also holds `gates`, `awaiting` and the `decisions` log. **The API key is never written here.**
 
 ## 01 PLAN  (stage: planning)
-- Input: the user's `query`.
-- The LLM is asked to decompose the question into `max_subquestions` focused,
-  independently-researchable sub-questions, returned as strict JSON.
-- Robust parse: extract the first JSON object/array; on failure fall back to
-  splitting the question into one sub-question (the question itself).
+- Input: `query` from `state.json`.
+- The LLM decomposes the question into at most `max_subquestions` sub-questions,
+  returned as strict JSON. Robust parse; on failure, fall back to the question itself.
+- Writes `01_plan/plan.md`: `Question: ...` + numbered lines. Stage 02 searches exactly
+  the numbered lines (`1. ...` or `1) ...`).
 - Emits: `status(planning)`, then `plan` with the sub-question list.
 
-## 02 RESEARCH  (stage: researching)  -- loop, one pass per sub-question
-For each sub-question `i`:
+## 02 SEARCH  (stage: researching)  -- loop, one pass per sub-question
+Reads the sub-questions from `01_plan/plan.md` on disk. For each sub-question `i`:
 1. `status(researching)` with progress = i / N.
-2. Web search (`app/services/search.py`): DuckDuckGo, top `search_max_results`.
-   Returns `Source[]` (title, url, snippet). Emits `sources`.
-   - If `search=false` or search fails, proceed with no sources (the model
-     answers from its own knowledge and the finding says so).
-3. LLM synthesis: given the sub-question + the search snippets, write a concise,
-   grounded answer that cites the source URLs inline. Emits `finding`.
+2. If `search` is on: web search (`app/services/search.py`, DuckDuckGo, top
+   `search_max_results`); emits `sources`.
+   - Sources found -> the LLM answers **only from those sources**, citing URLs.
+   - No sources -> the block is a `GAP`; no LLM call, nothing filled in.
+3. If `search` is off (user's choice): the LLM answers from general knowledge and the
+   block is labelled `unsourced (search off; NOT source-backed)`.
+4. Emits `finding`.
+Writes `02_search/evidence.md` (one `## N.` block per sub-question with status, finding,
+source links) and `02_search/sources.json` (raw results).
+
+**Andon STOP:** if search is on and no sub-question found any source, write
+`02_search/STOP.md`, mark the stage `stopped`, and emit `error` with code `stop`.
+Stage 03 does not run; nothing is guessed.
 
 ## 03 REPORT  (stage: report)
-- `status(report)`.
-- The LLM is given the original question + every finding and writes a structured
-  markdown report (executive summary, themed sections, conclusion). It is
-  **streamed** token-by-token as `token` events.
-- After streaming completes, emit `report` with the full text + the de-duplicated
-  union of all sources, then `done`.
+- Reads `02_search/evidence.md` from disk (possibly edited) + `query`.
+- `status(report)`; the LLM writes a structured markdown report, **streamed** as
+  `token` events. GAPs are stated as unanswered; unsourced runs say so up top.
+- Writes `03_report/report.md`; emits `report` with the full text + the de-duplicated
+  sources from `sources.json`, then `done`.
+
+## Review gates (human in the loop)
+With `review_plan: true` the run's `state.json` lists `gates: ["01_plan"]`:
+- After `01_plan`, the runner records `awaiting` in `state.json`, emits
+  `await_approval` (the plan text included) and `done{status: paused}`, and stops.
+- On an andon STOP with gates on, it pauses the same way (`reason: stop`) instead of
+  erroring, so the person can retry, reword the plan, or close the run.
+- `decide(run_id, req, client)` (`POST /research/runs/{run_id}/decision`) checks the
+  run is waiting on that stage, applies approve / edit / reject, appends to
+  `state.json` `decisions` (action, note, time, diff for edits), clears `awaiting`,
+  and resumes. Without gates, runs behave exactly as before.
+
+## Resume
+`resume_research(run_dir, client, from_stage)` re-runs `from_stage` and later stages
+from the files on disk (resets their status to `pending`, removes `STOP.md`). The
+decision endpoint calls it; it can also be called directly for a run edited by hand.
+
+## Evals (`backend/evals/stages.py`)
+- `python -m evals.stages check [run_dir]` -- offline contract checks for each stage of a run
+  (see `backend/evals/CONTEXT.md` for the list). Exit 1 on any FAIL.
+- `python -m evals.stages replay <run_dir> --from <stage>` -- re-run from a stage on the
+  recorded sources (`sources.json`), so a prompt/model change is judged on the same
+  evidence; writes `_replays/.../REPLAY.md` with the checks and a diff per stage file
+  (`--judge` adds a grounded-score comparison of original vs replay).
+- `python -m evals.stages judge <run_dir>` -- AI judge: each report claim vs `evidence.md`;
+  writes `_evals/<run>__judge_<time>.md/.json`. FAIL on a contradicted claim or > 20% unsupported.
 
 ## Errors
-Any exception is caught at the top of the generator and emitted as a single
-`error` event (code chosen by exception type: auth/provider/search/internal)
+Any exception is caught at the top of the stage runner and emitted as a single
+`error` event (code: `auth|provider|search|internal`, or `stop` for the andon stop)
 before the stream closes. The process never crashes the request.
 
 ## Why no LangGraph
-The reference backend uses LangGraph; we keep it to a plain async generator. The
-sequencing is linear and human-legible, which matches ICM invariant 9 (the control
-flow is visible in one file). Add a framework only if branching/concurrency is
-needed later.
+Plain async generators. The sequencing is linear and human-legible, which matches ICM
+invariant 9 (the control flow is visible in one file); the filesystem holds the state
+between stages. Add a framework only if branching/concurrency is needed later.

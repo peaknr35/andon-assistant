@@ -8,7 +8,8 @@ ChatContext; streams come from `lib/api.streamChat`.
 - `TurnTimeline.tsx` -- the live phases + memory + tool cards for one assistant turn.
 - `PhaseBadge.tsx` -- a colored badge per phase.
 - `ToolCallCard.tsx` -- one tool call (args + result, collapsible).
-- `MemoryPanel.tsx` -- read-only facts + counts + recent tool runs (GET /memory, /trace).
+- `MemoryPanel.tsx` -- facts + counts + recent tool runs (GET /memory, /trace); when memory
+  review is on, a "Waiting for your review" list with edit / approve / reject per proposal.
 
 ## Rules
 - Read/write turn state via `../../contexts/ChatContext` (`useChat`); don't hold it locally.

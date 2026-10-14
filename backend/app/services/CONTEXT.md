@@ -4,9 +4,13 @@ One job: work kept out of the route handlers and tools -- the research pipeline,
 search, and the calendar pull-sync.
 
 ## What's here
-- `research.py` -- `run_research(req, client)`: the async-generator pipeline
-  (plan -> research loop -> streamed report) that yields `ResearchEvent`s. Holds the
-  stage prompts and the sub-question JSON parser.
+- `research.py` -- `run_research(req, client)`: the file-backed pipeline (01 plan ->
+  02 search -> 03 streamed report) that yields `ResearchEvent`s; `resume_research(run_dir,
+  client, from_stage)` re-runs from a stage using the (possibly edited) files on disk.
+  Holds the stage prompts, the sub-question JSON parser, the andon STOP rule, review
+  gates (`await_approval`), and `decide(run_id, req, client)` for approve / edit / reject.
+- `runs.py` -- run folders (`~/.assistant/runs/<run_id>/`): create/open, `state.json`,
+  `trace.jsonl`, and the `plan.md` / `evidence.md` render + parse helpers.
 - `search.py` -- `web_search(query, max_results)`: DuckDuckGo via `ddgs` (no key);
   returns `Source[]`; degrades to `[]` on failure.
 - `calendar_sync.py` -- `sync_once()`: pulls upcoming events from each enabled cloud
@@ -16,7 +20,8 @@ search, and the calendar pull-sync.
 
 ## Reads / Writes
 - Reads: the provider client (research); the calendar provider modules + `memory/store`.
-- Writes: research yields a stream of events (no persistence); `calendar_sync` upserts
+- Writes: research yields a stream of events and writes each stage's file to the run folder
+  (never the API key); `calendar_sync` upserts
   into the `events` table.
 
 ## Rules
@@ -25,7 +30,8 @@ search, and the calendar pull-sync.
 - `calendar_sync`: provider modules swallow their own errors; the loop never dies on one.
 
 ## Where to add / change
-- A research stage -> `run_research` (prompt + an `EventFactory` method), then update
+- A research stage -> a `_stage_*` function in `research.py` + `runs.STAGES` + its
+  `workflows/deep_research/NN_<stage>/CONTEXT.md`, then update
   `_shared/research-workflow.md` + `_shared/api-contract.md`.
 - Calendar pull behaviour -> `calendar_sync.py`, then `_shared/calendar-sync.md`.
 

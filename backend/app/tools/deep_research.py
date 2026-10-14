@@ -18,10 +18,13 @@ _SYS_SOURCED = (
     "Be tight and practical -- a technician on the line is reading this."
 )
 _SYS_UNSOURCED = (
-    "You are a maintenance expert. No web results were available, so answer concisely "
-    "from general knowledge with clear numbered steps, and note that it is not "
-    "source-backed."
+    "You are a maintenance expert. The web search found NOTHING for this question. "
+    "Give concise, clearly general-knowledge numbered steps, and end by telling the "
+    "technician to confirm against the equipment manual or escalate to "
+    "maintenance/engineering before acting. Never cite or invent sources."
 )
+# Prepended in code (not left to the model) whenever no source came back.
+UNSOURCED_BANNER = "**NOT source-backed -- web search found nothing.**"
 
 
 def make_deep_research(client) -> ToolSpec:
@@ -65,6 +68,8 @@ def make_deep_research(client) -> ToolSpec:
             report = (report or "").rstrip() + "\n\n**Sources**\n" + "\n".join(
                 f"- {s.url}" for s in sources
             )
+        else:
+            report = f"{UNSOURCED_BANNER}\n\n{(report or '').strip()}"
         return report or "No report produced."
 
     return ToolSpec(

@@ -129,6 +129,13 @@ cd backend && PYTHONPATH=. .venv/Scripts/python.exe scripts/seed_demo.py
 ```
 Re-running `scripts/seed_demo.py` is always safe — it only adds the sample fixes/events if missing.
 
+**See and control what it remembers.** `~/.assistant/memory/facts.md` is a readable copy
+of everything saved, refreshed after each message. To approve new memories before they
+are kept, add `APP_MEMORY_REVIEW=1` to `backend/.env` and restart. Facts the assistant
+picks up on its own then wait under **Waiting for your review** in the dashboard's Memory
+panel (edit, ✓ or ✗), or type `/review` in the terminal. Anything you ask it to
+"remember" is still saved straight away.
+
 ---
 
 ## 7. If something's off
@@ -139,7 +146,7 @@ Re-running `scripts/seed_demo.py` is always safe — it only adds the sample fix
 | "no key" badge stays orange | Paste a key under **Keys**, or set `APP_API_KEY` in `backend/.env`. |
 | Dashboard won't load | Make sure both terminals are running. Check http://localhost:8080/health returns `{"status":"ok"...}`. |
 | Replies are slow | Switch the model to `claude-haiku-5-5` (fastest/cheapest). |
-| Research returns no sources | Web search (DuckDuckGo) may be rate-limited; it still answers from general knowledge. Retry in a bit. |
+| Research returns no sources | Web search (DuckDuckGo) may be rate-limited. The `/research` page stops with a "no usable web sources" error instead of guessing (see `STOP.md` in the run folder under `~/.assistant/runs/`); the chat `deep_research` tool still answers but marks it **NOT source-backed**. Retry in a bit. |
 | `npm run build` fails on an external drive | Known issue on some drives (readlink). Use `npm run dev` (what `run.ps1` uses), or build on the C: drive / via Docker. |
 | PowerShell won't run the script | `Set-ExecutionPolicy -Scope Process -Bypass`, then run it again. |
 

@@ -6,14 +6,15 @@ import { RotateCcw, Search, Square } from "lucide-react";
 import { useApiKeys } from "@/contexts/ApiKeyContext";
 import { useResearch } from "@/contexts/ResearchContext";
 import { providerById } from "@/lib/models";
-import type { Provider } from "@/lib/types";
+import type { DecisionAction, Provider } from "@/lib/types";
+import { ApprovalPanel } from "./ApprovalPanel";
 import { FindingCard } from "./FindingCard";
 import { ModelSelector } from "./ModelSelector";
 import { ProgressStages } from "./ProgressStages";
 import { ReportView } from "./ReportView";
 
 export function ResearchInterface() {
-  const { main, runMain, stopMain, resetMain } = useResearch();
+  const { main, runMain, stopMain, resetMain, decideMain } = useResearch();
   const { keys, hasKey } = useApiKeys();
 
   const [query, setQuery] = useState("");
@@ -21,6 +22,7 @@ export function ResearchInterface() {
   const [model, setModel] = useState(providerById("openai").defaultModel);
   const [maxSub, setMaxSub] = useState(4);
   const [search, setSearch] = useState(true);
+  const [reviewPlan, setReviewPlan] = useState(true);
   const [warn, setWarn] = useState<string | null>(null);
 
   const running = main.running;
@@ -37,7 +39,16 @@ export function ResearchInterface() {
       return;
     }
     setWarn(null);
-    runMain({ query: q, provider, model, apiKey: keys[provider]!, maxSubquestions: maxSub, search });
+    runMain({ query: q, provider, model, apiKey: keys[provider]!, maxSubquestions: maxSub, search, reviewPlan });
+  };
+
+  const decide = (action: DecisionAction, editedContent?: string, note?: string) => {
+    if (!hasKey(main.provider)) {
+      setWarn(`Add your ${providerById(main.provider).label} API key with the Keys button to continue.`);
+      return;
+    }
+    setWarn(null);
+    decideMain({ action, editedContent, note, apiKey: keys[main.provider]! });
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -88,6 +99,14 @@ export function ResearchInterface() {
             <input type="checkbox" checked={search} onChange={(e) => setSearch(e.target.checked)} />
             Live web search
           </label>
+          <label
+            className="flex items-center gap-2 text-sm"
+            style={{ color: "var(--muted)" }}
+            title="Pause after planning so you can edit or approve the sub-questions before any search runs."
+          >
+            <input type="checkbox" checked={reviewPlan} onChange={(e) => setReviewPlan(e.target.checked)} />
+            Review plan first
+          </label>
           <div className="ml-auto flex items-center gap-2">
             {running ? (
               <button className="btn btn-ghost" onClick={stopMain}>
@@ -132,7 +151,10 @@ export function ResearchInterface() {
               </p>
             </div>
           )}
-          {main.plan.length > 0 && (
+          {main.approval && (
+            <ApprovalPanel approval={main.approval} busy={running} onDecide={decide} />
+          )}
+          {main.plan.length > 0 && !main.approval && (
             <div className="card p-4">
               <h2
                 className="mb-2 text-xs font-semibold uppercase tracking-wide"
